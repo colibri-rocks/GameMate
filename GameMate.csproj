@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+
+    <!-- NvAPIWrapper resolves nvapi64.dll by name, and that module only exists for 64-bit
+         processes: in an x86 host the NVIDIA calls would fail at runtime rather than at build
+         time. AnyCPU stays in the platform list so the existing solution configuration keeps
+         resolving; PlatformTarget is what actually forces the 64-bit output. -->
+    <Platforms>AnyCPU;x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- NVAPI: Digital Vibrance plus NVIDIA GPU and display enumeration. -->
+    <PackageReference Include="NvAPIWrapper.Net" Version="0.8.1.101" />
+    <!-- Windows display device paths, used to correlate the OS monitors with NVIDIA displays. -->
+    <PackageReference Include="WindowsDisplayAPI" Version="1.3.0.13" />
+  </ItemGroup>
+
+</Project>

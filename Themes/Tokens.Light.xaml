@@ -1,0 +1,49 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Light palette. Every key present here must also exist in Tokens.Dark.xaml: the two files are
+        swapped wholesale at runtime, so a key that only exists in one of them leaves its consumers
+        without a value.
+
+        Consumers must reference these with {DynamicResource} rather than {StaticResource}. A
+        StaticResource is resolved once while the element tree is parsed and would keep pointing at the
+        old brush forever after the dictionaries are swapped.
+    -->
+
+    <!-- Window and panel surfaces -->
+    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#FFF3F3F3" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="SurfaceBorderBrush" Color="#FFD0D0D0" />
+
+    <!-- Text -->
+    <SolidColorBrush x:Key="ForegroundBrush" Color="#FF1F1F1F" />
+    <!-- Replaces every literal Gray caption, which would be illegible on a dark background. -->
+    <SolidColorBrush x:Key="ForegroundMutedBrush" Color="#FF6A6A6A" />
+
+    <!-- Accent used by the slider icons and the active profile button -->
+    <SolidColorBrush x:Key="AccentBrush" Color="#FF2D7DD2" />
+    <SolidColorBrush x:Key="AccentBorderBrush" Color="#FF1B5E9E" />
+    <SolidColorBrush x:Key="AccentForegroundBrush" Color="#FFFFFFFF" />
+
+    <!-- Generic control chrome -->
+    <SolidColorBrush x:Key="ControlBackgroundBrush" Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="ControlBorderBrush" Color="#FFB8B8B8" />
+    <SolidColorBrush x:Key="ControlHoverBrush" Color="#FFE8E8E8" />
+    <SolidColorBrush x:Key="ControlPressedBrush" Color="#FFD8D8D8" />
+    <SolidColorBrush x:Key="ControlDisabledBackgroundBrush" Color="#FFEDEDED" />
+    <SolidColorBrush x:Key="ControlDisabledForegroundBrush" Color="#FF9A9A9A" />
+
+    <!-- Sliders -->
+    <SolidColorBrush x:Key="SliderTrackBrush" Color="#FFD5D5D5" />
+    <SolidColorBrush x:Key="SliderThumbBrush" Color="#FF2D7DD2" />
+
+    <!-- Scrollbars, needed because the display list scrolls once it holds more than four monitors -->
+    <SolidColorBrush x:Key="ScrollBarThumbBrush" Color="#FFB0B0B0" />
+    <SolidColorBrush x:Key="ScrollBarThumbHoverBrush" Color="#FF8E8E8E" />
+
+    <!-- Selection highlight -->
+    <SolidColorBrush x:Key="SelectionBrush" Color="#FFCCE4F7" />
+    <SolidColorBrush x:Key="SelectionForegroundBrush" Color="#FF1F1F1F" />
+
+</ResourceDictionary>

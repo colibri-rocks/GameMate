@@ -1,0 +1,19 @@
+﻿<Application x:Class="GameMate.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:GameMate"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--
+                    The light palette is merged here so every DynamicResource key already resolves while
+                    the XAML is parsed, which avoids design-time and first-frame fallbacks. ThemeManager
+                    replaces this very entry during OnStartup, before the main window is constructed, so
+                    a dark setting never flashes light first.
+                -->
+                <ResourceDictionary Source="Themes/Tokens.Light.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
