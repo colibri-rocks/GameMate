@@ -14,6 +14,10 @@
     <Platforms>AnyCPU;x64</Platforms>
     <PlatformTarget>x64</PlatformTarget>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
+    <!-- Embedded into the executable so the taskbar, Alt+Tab, Explorer and the
+         title bar (via the WPF fallback) all show the app icon. -->
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
