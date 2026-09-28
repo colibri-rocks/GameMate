@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:infra="clr-namespace:GameMate.Infrastructure"
         mc:Ignorable="d"
-        Title="GameMate - Display Color Control"
+        Title="GameMate - Display control"
         Width="920"
         MinWidth="800"
         MinHeight="360"
@@ -110,16 +110,32 @@
                     </ListBox.ItemContainerStyle>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <StackPanel>
-                                <!-- Trimmed rather than wrapped so a long name cannot change the row height. -->
-                                <TextBlock Text="{Binding DisplayLabel}"
-                                           TextTrimming="CharacterEllipsis"
-                                           ToolTip="{Binding DisplayLabel}" />
-                                <TextBlock FontSize="10"
-                                           Foreground="{DynamicResource ForegroundMutedBrush}"
-                                           Text="Primary display"
-                                           Visibility="{Binding IsPrimary, Converter={StaticResource BooleanToVisibility}}" />
-                            </StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Monitor icon on every row; ControlIconStyle already carries the Segoe MDL2 font chain. -->
+                                <TextBlock Grid.Column="0"
+                                           Style="{StaticResource ControlIconStyle}"
+                                           Text="&#xE7F4;" />
+
+                                <StackPanel Grid.Column="1">
+                                    <!-- Trimmed rather than wrapped so a long name cannot change the row height. -->
+                                    <TextBlock Text="{Binding DisplayLabel}"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding DisplayLabel}" />
+
+                                    <!-- The primary row is marked with a star instead of the removed text caption. -->
+                                    <TextBlock FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons, Segoe UI Symbol"
+                                               FontSize="10"
+                                               Foreground="{DynamicResource AccentBrush}"
+                                               Text="&#xE735;"
+                                               ToolTip="Primary display"
+                                               Visibility="{Binding IsPrimary, Converter={StaticResource BooleanToVisibility}}" />
+                                </StackPanel>
+                            </Grid>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
