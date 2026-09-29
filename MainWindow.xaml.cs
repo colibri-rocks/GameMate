@@ -21,6 +21,11 @@ public partial class MainWindow : Window
     private readonly IThemeManager _themeManager;
 
     /// <summary>
+    /// Owns the system-wide profile toggle hotkey.
+    /// </summary>
+    private readonly ProfileHotkeyService _hotkeyService = new();
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="MainWindow"/> class and wires the concrete
     /// services, so the window owns the only composition root of the application.
     /// </summary>
@@ -47,6 +52,10 @@ public partial class MainWindow : Window
         // Re-applies the native chrome whenever the user cycles to another theme.
         _themeManager.ThemeChanged += OnThemeChanged;
 
+        // The hotkey has to work while GameMate is unfocused, so it is registered globally rather than
+        // as a key binding.
+        _hotkeyService.Pressed += OnProfileHotkeyPressed;
+
         // Display enumeration and the NVAPI probe run after the window is shown, so a slow or missing
         // driver can neither delay nor break startup.
         Loaded += OnWindowLoaded;
@@ -63,6 +72,12 @@ public partial class MainWindow : Window
         Loaded -= OnWindowLoaded;
 
         _viewModel.Initialize();
+
+        // SizeToContent re-measures the window from the content tree on every layout pass and overrides a
+        // manual resize, so height control is handed back to the user (and to MinHeight) once the window
+        // has sized itself. This must run after Initialize, which is what establishes the final content
+        // height: setting it earlier would capture the not-yet-populated window and reintroduce clipping.
+        SizeToContent = SizeToContent.Manual;
     }
 
     /// <summary>
@@ -75,17 +90,42 @@ public partial class MainWindow : Window
         // The theme manager outlives this window, so the subscription has to be released explicitly.
         _themeManager.ThemeChanged -= OnThemeChanged;
 
+        // Releasing the chord here matters: an unregistered global hotkey stays owned by the process
+        // until it exits, so a relaunch would fail to register it again.
+        _hotkeyService.Pressed -= OnProfileHotkeyPressed;
+        _hotkeyService.Dispose();
+
         _viewModel.Dispose();
     }
 
     /// <summary>
-    /// Switches the native title bar to the current palette once the window has a handle.
+    /// Switches the native title bar to the current palette and claims the profile toggle hotkey once
+    /// the window has a handle.
     /// </summary>
     /// <param name="sender">Window that was initialised.</param>
     /// <param name="e">Event data.</param>
     private void OnWindowSourceInitialized(object? sender, EventArgs e)
     {
         _themeManager.ApplyNativeWindowTheme(this);
+
+        // A global hotkey can only be registered against a window that already owns a message queue,
+        // which is exactly what this event guarantees.
+        if (!_hotkeyService.TryRegister(this, out string? failureReason))
+        {
+            // Windows refuses a chord another application owns without raising an error, so the outcome
+            // is reported rather than left as a silently dead shortcut.
+            _viewModel.ReportHotkeyUnavailable(failureReason);
+        }
+    }
+
+    /// <summary>
+    /// Applies the profile toggle when the global hotkey fires.
+    /// </summary>
+    /// <param name="sender">Hotkey service that raised the event.</param>
+    /// <param name="e">Event data.</param>
+    private void OnProfileHotkeyPressed(object? sender, EventArgs e)
+    {
+        _viewModel.ToggleProfileOneAndTwo();
     }
 
     /// <summary>

@@ -90,6 +90,38 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public RelayCommand CycleThemeCommand { get; }
 
     /// <summary>
+    /// Toggles between profile slot 1 and slot 2, applying the newly selected slot.
+    /// </summary>
+    /// <remarks>
+    /// Kept separate from <see cref="ApplyProfileCommand"/> because that command requires a selected
+    /// display, while this is driven by a global hotkey that can fire before the window was ever
+    /// focused. Loosening the command's own guard instead would change when the profile buttons are
+    /// enabled in the UI.
+    /// </remarks>
+    public void ToggleProfileOneAndTwo()
+    {
+        // ActiveProfileIndex already records which slot was applied last, so it doubles as the toggle
+        // memory and no extra field has to be added or persisted.
+        int target = _profiles.ActiveProfileIndex == 0 ? 1 : 0;
+
+        ApplyProfile((target + 1).ToString(CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>
+    /// Reports that the global profile toggle hotkey could not be claimed, so the window explains the
+    /// state instead of leaving a shortcut that silently does nothing.
+    /// </summary>
+    /// <param name="reason">
+    /// Explanation produced by the hotkey service, or <see langword="null"/> when none was supplied.
+    /// </param>
+    public void ReportHotkeyUnavailable(string? reason)
+    {
+        // Called from the composition root before the window is shown, so it deliberately goes through
+        // the same status property the rest of the window uses.
+        StatusMessage = reason ?? "The profile toggle hotkey (Ctrl+Alt+Shift+P) is unavailable.";
+    }
+
+    /// <summary>
     /// Gets the Segoe MDL2 Assets glyph for the theme the user selected.
     /// </summary>
     /// <remarks>
@@ -152,8 +184,24 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public string StatusMessage
     {
         get => _statusMessage;
-        private set => SetProperty(ref _statusMessage, value);
+        private set
+        {
+            if (SetProperty(ref _statusMessage, value))
+            {
+                // Visibility of the whole status block follows this text.
+                OnPropertyChanged(nameof(ShowsStatusMessage));
+            }
+        }
     }
+
+    /// <summary>
+    /// Gets a value indicating whether the status line carries something worth showing.
+    /// </summary>
+    /// <remarks>
+    /// The window hides the line while it only holds the idle text, so the resting state stays clean
+    /// without losing apply results or driver errors.
+    /// </remarks>
+    public bool ShowsStatusMessage => !string.Equals(_statusMessage, ReadyStatus, StringComparison.Ordinal);
 
     /// <summary>
     /// Gets the name of the profile that is currently in use.
@@ -404,10 +452,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 FindMonitor(deviceKey)?.LoadSettings(profile.Resolve(deviceKey));
             }
 
-            SelectedDisplay = profile.Devices.Select(FindMonitor).FirstOrDefault(monitor => monitor is not null)
-                              ?? SelectedDisplay;
-
-            // The highlighted display has to show this profile's values even when it is not covered yet.
+            // The highlighted display keeps its selection: applying a profile must not move the user's
+            // focus to another monitor. It only has to show this profile's values.
             MonitorViewModel? highlighted = SelectedDisplay;
 
             if (highlighted is not null)
@@ -444,8 +490,28 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             appliedCount = 1;
         }
 
+        // The hotkey path can reach this method while nothing is selected. Rather than doing nothing,
+        // the slot's global values are applied to every enumerated display, which is what makes the
+        // shortcut useful from another application. The UI buttons are unaffected because they can only
+        // be clicked with a selection present.
+        if (appliedCount == 0)
+        {
+            foreach (MonitorViewModel monitor in Displays)
+            {
+                ApplySettings(monitor, profile.Global);
+                appliedCount++;
+            }
+        }
+
         ScheduleProfileSave();
-        StatusMessage = $"{profile.Name} applied to {appliedCount} display(s).";
+
+        // A successful apply deliberately leaves the status line untouched: the sliders and the active
+        // profile highlight already show the outcome, so the resting state stays clean. Only a real
+        // failure is worth reporting.
+        if (appliedCount == 0)
+        {
+            StatusMessage = $"{profile.Name} could not be applied because no display is available.";
+        }
     }
 
     /// <summary>

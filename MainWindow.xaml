@@ -37,13 +37,100 @@
             <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
             <Setter Property="Margin" Value="0,0,8,0" />
         </Style>
+        <!-- Filled part of the track (left of the thumb): the accent colour reads as "how far from minimum". -->
+        <Style x:Key="SliderFillStyle" TargetType="RepeatButton">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="IsTabStop" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton">
+                        <Border Height="6" CornerRadius="3"
+                                Background="{DynamicResource AccentBrush}" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Remainder of the track (right of the thumb), reusing the theme token that was already prepared. -->
+        <Style x:Key="SliderEmptyStyle" TargetType="RepeatButton">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="IsTabStop" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton">
+                        <Border Height="6" CornerRadius="3"
+                                Background="{DynamicResource SliderTrackBrush}" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Thumb: themed circle that grows on hover and while dragging, so the grab target is obvious. -->
+        <Style x:Key="SliderThumbStyle" TargetType="Thumb">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Grid>
+                            <Ellipse x:Name="Grow" Margin="2"
+                                     Fill="{DynamicResource SliderThumbBrush}" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Grow" Property="Margin" Value="0" />
+                            </Trigger>
+                            <!-- React to dragging too: hovering is not the same as actively scrubbing. -->
+                            <Trigger Property="IsDragging" Value="True">
+                                <Setter TargetName="Grow" Property="Margin" Value="0" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Implicit so all five sliders pick it up; they carry no explicit Style of their own. -->
+        <Style TargetType="Slider">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <!-- Transparent background so the whole 20 px band is grabbable, not only the 6 px track. -->
+                        <Grid Background="Transparent">
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="Slider.DecreaseLarge"
+                                                  Style="{StaticResource SliderFillStyle}" />
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Style="{StaticResource SliderThumbStyle}" />
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="Slider.IncreaseLarge"
+                                                  Style="{StaticResource SliderEmptyStyle}" />
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <!-- Two sliders sit behind IsEnabled bindings, so the disabled look cannot be dropped. -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
-    <Grid Margin="18">
+    <Grid Margin="18,18,18,6">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0" Margin="0,0,0,14">
@@ -77,7 +164,7 @@
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="270" />
+                <ColumnDefinition Width="330" />
                 <ColumnDefinition Width="18" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
@@ -87,6 +174,22 @@
                 <TextBlock DockPanel.Dock="Top"
                            Margin="0,0,0,6"
                            Text="Select a display to change:" />
+
+                <!-- Status sits under the list so it lines up with the profile buttons in the right
+                     column. Moving it here removes the separate bottom row and shortens the window. -->
+                <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+                    <!-- Hidden while it only holds the idle text, so the resting state stays clean. -->
+                    <TextBlock Text="{Binding StatusMessage}"
+                               TextWrapping="Wrap"
+                               Visibility="{Binding ShowsStatusMessage, Converter={StaticResource BooleanToVisibility}}" />
+
+                    <!-- Documents the global profile toggle hotkey: it is the only shortcut the app
+                         registers, and there is no other place in the UI that reveals it. -->
+                    <TextBlock Margin="0,4,0,0"
+                               FontSize="11"
+                               Foreground="{DynamicResource ForegroundMutedBrush}"
+                               Text="Ctrl+Alt+Shift+P to toggle between Profile 1 and Profile 2" />
+                </StackPanel>
 
                 <!-- MaxHeight caps the list at 4 rows; VerticalAlignment Top lets it stay compact while
                      fewer displays are connected, and the bar appears only once the cap is reached. -->
@@ -143,12 +246,6 @@
 
             <!-- Everything below edits the highlighted display only. -->
             <StackPanel Grid.Column="2" IsEnabled="{Binding HasSelection}">
-                <StackPanel.Resources>
-                    <Style TargetType="Slider">
-                        <Setter Property="VerticalAlignment" Value="Center" />
-                    </Style>
-                </StackPanel.Resources>
-
                 <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="22" />
@@ -318,17 +415,5 @@
             </StackPanel>
         </Grid>
 
-        <StackPanel Grid.Row="2" Margin="0,14,0,0">
-            <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" />
-            <TextBlock Margin="0,4,0,0"
-                       FontSize="11"
-                       Foreground="{DynamicResource ForegroundMutedBrush}"
-                       Text="{Binding NvidiaSummary}"
-                       TextWrapping="Wrap" />
-            <TextBlock Margin="0,2,0,0"
-                       FontSize="11"
-                       Foreground="{DynamicResource ForegroundMutedBrush}"
-                       Text="{Binding ActiveProfileSummary}" />
-        </StackPanel>
     </Grid>
 </Window>
