@@ -12,7 +12,7 @@ Profile buttons can be renamed by double-clicking on them.
 
 Hotkey Ctrl+Alt+Shift+P to toggle between "Profile 1" and "Profile 2"
 
-Current limitations - Windows 10/11, NVIDIA videocard (basic settings except Digital vibrance and Hue should work, but need to be tested).
+Current limitations - Windows 10/11, NVIDIA videocard (On AMD/Intel basic settings except Digital vibrance and Hue should work, but need to be tested).
 
 Changelist:
 
