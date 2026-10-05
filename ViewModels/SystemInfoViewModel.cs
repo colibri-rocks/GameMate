@@ -39,6 +39,11 @@ public sealed class SystemInfoViewModel : ObservableObject
             VideoControllers.Add(controller);
         }
 
+        foreach (FeatureGroup group in BuildFeatureGroups(VideoControllers))
+        {
+            FeatureGroups.Add(group);
+        }
+
         foreach (MonitorViewModel monitor in monitors)
         {
             Monitors.Add(monitor);
@@ -101,6 +106,12 @@ public sealed class SystemInfoViewModel : ObservableObject
     public ObservableCollection<MonitorViewModel> Monitors { get; } = [];
 
     /// <summary>
+    /// Gets the feature matrix: which colour controls this machine supports, grouped by the API that
+    /// provides them.
+    /// </summary>
+    public ObservableCollection<FeatureGroup> FeatureGroups { get; } = [];
+
+    /// <summary>
     /// Gets the complete window content as plain text, ready to be placed on the clipboard.
     /// </summary>
     /// <remarks>
@@ -108,6 +119,47 @@ public sealed class SystemInfoViewModel : ObservableObject
     /// it describes, and so the window keeps no formatting logic of its own.
     /// </remarks>
     public string ReportText { get; }
+
+    /// <summary>
+    /// Builds the feature matrix, grouped by the API that applies each control.
+    /// </summary>
+    /// <param name="controllers">Video adapters reported by the operating system.</param>
+    /// <returns>The groups, in the order they are shown.</returns>
+    /// <remarks>
+    /// Brightness, Contrast, Gamma and the ramp approximation of Hue all go through the Windows gamma
+    /// ramp, which works on any adapter. Digital Vibrance and the native Hue rotation are applied only
+    /// through NVAPI, so they need an NVIDIA card. Hue therefore appears in both groups: NVAPI is the
+    /// preferred path and the ramp is what remains when NVAPI is unavailable.
+    /// </remarks>
+    private static IEnumerable<FeatureGroup> BuildFeatureGroups(IEnumerable<VideoControllerInfo> controllers)
+    {
+        bool hasNvidia = controllers.Any(controller =>
+            controller.Name.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase));
+
+        // The gamma ramp path works on any adapter, so every row in this group is available.
+        yield return new FeatureGroup
+        {
+            Name = "Windows API (gamma ramp)",
+            Features =
+            [
+                new FeatureSupport { Feature = "Brightness", IsSupported = true },
+                new FeatureSupport { Feature = "Contrast", IsSupported = true },
+                new FeatureSupport { Feature = "Gamma", IsSupported = true },
+                new FeatureSupport { Feature = "Hue (ramp approximation)", IsSupported = true },
+            ],
+        };
+
+        // NVAPI is NVIDIA only, so this group follows the presence of an NVIDIA adapter.
+        yield return new FeatureGroup
+        {
+            Name = "NVAPI (NVIDIA)",
+            Features =
+            [
+                new FeatureSupport { Feature = "Digital Vibrance", IsSupported = hasNvidia },
+                new FeatureSupport { Feature = "Hue (native, preferred)", IsSupported = hasNvidia },
+            ],
+        };
+    }
 
     /// <summary>
     /// Renders the whole window content as plain text.
@@ -164,6 +216,19 @@ public sealed class SystemInfoViewModel : ObservableObject
         else
         {
             builder.AppendLine("No monitor was detected.");
+        }
+
+        builder.AppendLine();
+        builder.AppendLine("Feature matrix");
+
+        foreach (FeatureGroup group in FeatureGroups)
+        {
+            builder.AppendLine(group.Name);
+
+            foreach (FeatureSupport feature in group.Features)
+            {
+                builder.AppendLine($"  {feature.Feature}: {feature.StatusText}");
+            }
         }
 
         return builder.ToString().TrimEnd();

@@ -16,6 +16,16 @@ public sealed record VideoControllerInfo
     public required string Name { get; init; }
 
     /// <summary>
+    /// Gets a value indicating whether this adapter is an integrated graphics device.
+    /// </summary>
+    public bool IsIntegrated { get; init; }
+
+    /// <summary>
+    /// Gets the adapter model shown in the window, suffixed when the adapter is integrated.
+    /// </summary>
+    public string DisplayName => IsIntegrated ? $"{Name} (integrated)" : Name;
+
+    /// <summary>
     /// Gets the driver version string reported for this adapter, or <see langword="null"/> when the
     /// driver did not report one.
     /// </summary>

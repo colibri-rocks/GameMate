@@ -195,6 +195,35 @@ public sealed class SystemInfoService : ISystemInfoService
     }
 
     /// <summary>
+    /// Decides whether a video adapter is an integrated graphics device.
+    /// </summary>
+    /// <param name="name">Adapter model reported by the operating system.</param>
+    /// <returns><see langword="true"/> for the integrated families listed below.</returns>
+    /// <remarks>
+    /// WMI exposes no integrated/discrete flag and AdapterRAM is unusable as a proxy (it saturates at
+    /// 2^31), so the model name is matched instead. Discrete product lines are excluded explicitly so a
+    /// Radeon RX is never mistaken for an APU.
+    /// </remarks>
+    private static bool IsIntegratedAdapter(string name)
+    {
+        // Intel integrated families.
+        if (name.Contains("Intel", StringComparison.OrdinalIgnoreCase)
+            && (name.Contains("UHD Graphics", StringComparison.OrdinalIgnoreCase)
+                || name.Contains("Iris", StringComparison.OrdinalIgnoreCase)
+                || name.Contains("HD Graphics", StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        // AMD APUs report a generic "Radeon Graphics" or a Vega part with no RX model number.
+        return name.Contains("Radeon", StringComparison.OrdinalIgnoreCase)
+            && !name.Contains("RX", StringComparison.OrdinalIgnoreCase)
+            && !name.Contains("Radeon Pro", StringComparison.OrdinalIgnoreCase)
+            && (name.Contains("Graphics", StringComparison.OrdinalIgnoreCase)
+                || name.Contains("Vega", StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
     /// Queries WMI for the video controllers and their driver information.
     /// </summary>
     /// <param name="nvidiaDriverVersion">
@@ -236,6 +265,7 @@ public sealed class SystemInfoService : ISystemInfoService
                         NvidiaDriverVersion = name.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase)
                             ? nvidiaDriverVersion
                             : null,
+                        IsIntegrated = IsIntegratedAdapter(name),
                         DriverVersion = adapter["DriverVersion"] as string,
 
                         // DriverDate is a CIM_DATETIME; WMI maps it to DateTime, but a driver that
