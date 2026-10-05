@@ -31,6 +31,10 @@ namespace GameMate.Services;
 /// <c>PathDisplayTarget</c> has no <c>DeviceName</c> member, so the GDI name can only come from the
 /// display source.
 /// </description></item>
+/// <item><description>
+/// <c>PathInfo.Resolution</c> is a <c>System.Drawing.Size</c> and <c>PathInfo.IsModeInformationAvailable</c>
+/// says whether it holds a usable mode, which is how the display resolution is reported.
+/// </description></item>
 /// </list>
 /// </remarks>
 public sealed class DisplayService : IDisplayService
@@ -192,6 +196,10 @@ public sealed class DisplayService : IDisplayService
             NvDisplay? nvidiaDisplay = MatchNvidiaDisplay(
                 gdiName, devicePath, friendlyName, ordinal, paths.Length, nvidiaDisplays, assigned);
 
+            // Read before the initialiser because the mode can legitimately be unavailable, in which case
+            // both values stay at zero and the UI reports that instead of an empty size.
+            (int width, int height) = ResolveResolution(path);
+
             displays.Add(new DisplayInfo
             {
                 DeviceKey = ResolveDeviceKey(devicePath, gdiName, ordinal),
@@ -199,6 +207,8 @@ public sealed class DisplayService : IDisplayService
                 FriendlyName = friendlyName,
                 Ordinal = ordinal,
                 IsPrimary = path.IsGDIPrimary,
+                Width = width,
+                Height = height,
                 NvidiaDisplayId = nvidiaDisplay?.DisplayDevice?.DisplayId,
                 NvidiaDisplay = nvidiaDisplay,
             });
@@ -207,6 +217,42 @@ public sealed class DisplayService : IDisplayService
         }
 
         return displays;
+    }
+
+    /// <summary>
+    /// Reads the pixel resolution of a display's current mode.
+    /// </summary>
+    /// <param name="path">Path whose current mode should be read.</param>
+    /// <returns>
+    /// The mode width and height, or zero for both when no usable mode was reported. Zero is rendered as
+    /// "Resolution not reported" rather than as an empty size.
+    /// </returns>
+    /// <remarks>
+    /// The member names were verified against WindowsDisplayAPI 1.3.0.13 during implementation:
+    /// <c>PathInfo.Resolution</c> is a <c>System.Drawing.Size</c> carrying the mode the path is currently
+    /// using, and <c>PathInfo.IsModeInformationAvailable</c> reports whether that value is meaningful.
+    /// </remarks>
+    private static (int Width, int Height) ResolveResolution(PathInfo path)
+    {
+        try
+        {
+            if (!path.IsModeInformationAvailable)
+            {
+                return (0, 0);
+            }
+
+            System.Drawing.Size resolution = path.Resolution;
+
+            return resolution.Width > 0 && resolution.Height > 0
+                ? (resolution.Width, resolution.Height)
+                : (0, 0);
+        }
+        catch (Exception)
+        {
+            // Reading the mode goes through the display configuration API, which can fail on a
+            // locked-down session. Enumeration must never fail because of it.
+            return (0, 0);
+        }
     }
 
     /// <summary>

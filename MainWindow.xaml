@@ -144,22 +144,39 @@
                        FontWeight="SemiBold"
                        Text="Display control" />
 
-            <!-- Cycles Follow Windows -> Light -> Dark. The tooltip names both the current mode and the
-                 next one, which is what keeps a three-state icon button unambiguous. -->
-            <Button Grid.Column="1"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    Padding="8,4"
-                    Command="{Binding CycleThemeCommand}"
-                    ToolTip="{Binding ThemeTooltip}"
-                    AutomationProperties.Name="{Binding ThemeTooltip}"
-                    Background="{DynamicResource ControlBackgroundBrush}"
-                    BorderBrush="{DynamicResource ControlBorderBrush}">
-                <TextBlock FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons, Segoe UI Symbol"
-                           FontSize="16"
-                           Foreground="{DynamicResource ForegroundBrush}"
-                           Text="{Binding ThemeGlyph}" />
-            </Button>
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center">
+                <!-- Opens the system information window. The view model only raises the request; the
+                     window itself is created by the composition root, which owns window creation. -->
+                <Button Padding="8,4"
+                        Command="{Binding ShowSystemInfoCommand}"
+                        ToolTip="System information"
+                        AutomationProperties.Name="System information"
+                        Background="{DynamicResource ControlBackgroundBrush}"
+                        BorderBrush="{DynamicResource ControlBorderBrush}">
+                    <TextBlock FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons, Segoe UI Symbol"
+                               FontSize="16"
+                               Foreground="{DynamicResource ForegroundBrush}"
+                               Text="&#xE946;" />
+                </Button>
+
+                <!-- Cycles Follow Windows -> Light -> Dark. The tooltip names both the current mode and the
+                     next one, which is what keeps a three-state icon button unambiguous. -->
+                <Button Margin="8,0,0,0"
+                        Padding="8,4"
+                        Command="{Binding CycleThemeCommand}"
+                        ToolTip="{Binding ThemeTooltip}"
+                        AutomationProperties.Name="{Binding ThemeTooltip}"
+                        Background="{DynamicResource ControlBackgroundBrush}"
+                        BorderBrush="{DynamicResource ControlBorderBrush}">
+                    <TextBlock FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons, Segoe UI Symbol"
+                               FontSize="16"
+                               Foreground="{DynamicResource ForegroundBrush}"
+                               Text="{Binding ThemeGlyph}" />
+                </Button>
+            </StackPanel>
         </Grid>
 
         <Grid Grid.Row="1">
@@ -188,7 +205,7 @@
                     <TextBlock Margin="0,4,0,0"
                                FontSize="11"
                                Foreground="{DynamicResource ForegroundMutedBrush}"
-                               Text="Ctrl+Alt+Shift+P to toggle between Profile 1 and Profile 2" />
+                               TextWrapping="Wrap" Text="{Binding HotkeyHint}" />
                 </StackPanel>
 
                 <!-- MaxHeight caps the list at 4 rows; VerticalAlignment Top lets it stay compact while
@@ -224,20 +241,41 @@
                                            Style="{StaticResource ControlIconStyle}"
                                            Text="&#xE7F4;" />
 
-                                <StackPanel Grid.Column="1">
+                                <Grid Grid.Column="1">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
                                     <!-- Trimmed rather than wrapped so a long name cannot change the row height. -->
-                                    <TextBlock Text="{Binding DisplayLabel}"
+                                    <TextBlock Grid.Row="0"
+                                               Text="{Binding DisplayLabel}"
                                                TextTrimming="CharacterEllipsis"
                                                ToolTip="{Binding DisplayLabel}" />
 
-                                    <!-- The primary row is marked with a star instead of the removed text caption. -->
-                                    <TextBlock FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons, Segoe UI Symbol"
-                                               FontSize="10"
-                                               Foreground="{DynamicResource AccentBrush}"
-                                               Text="&#xE735;"
-                                               ToolTip="Primary display"
-                                               Visibility="{Binding IsPrimary, Converter={StaticResource BooleanToVisibility}}" />
-                                </StackPanel>
+                                    <!-- Second line: the primary star followed by the resolution, so the display
+                                         name keeps the full width of the first line. -->
+                                    <StackPanel Grid.Row="1" Orientation="Horizontal">
+                                        <!-- The border keeps the star's 16 px slot occupied even when the row is not
+                                             the primary display, so the resolution starts at the same offset on
+                                             every row instead of jumping left. -->
+                                        <Border Width="16">
+                                            <TextBlock FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons, Segoe UI Symbol"
+                                                       FontSize="10"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource AccentBrush}"
+                                                       Text="&#xE735;"
+                                                       ToolTip="Primary display"
+                                                       Visibility="{Binding IsPrimary, Converter={StaticResource BooleanToVisibility}}" />
+                                        </Border>
+
+                                        <TextBlock Margin="6,0,0,0"
+                                                   FontSize="11"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource ForegroundMutedBrush}"
+                                                   Text="{Binding ResolutionLabel}" />
+                                    </StackPanel>
+                                </Grid>
                             </Grid>
                         </DataTemplate>
                     </ListBox.ItemTemplate>

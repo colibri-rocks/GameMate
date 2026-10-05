@@ -64,6 +64,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         ApplyProfileCommand = new RelayCommand(ApplyProfile, _ => SelectedDisplay is not null);
         ResetToDefaultsCommand = new RelayCommand(ResetToDefaults, () => SelectedDisplay is not null);
         CycleThemeCommand = new RelayCommand(CycleTheme);
+        ShowSystemInfoCommand = new RelayCommand(() => SystemInfoRequested?.Invoke(this, EventArgs.Empty));
     }
 
     /// <summary>
@@ -88,6 +89,44 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     /// Gets the command that advances the theme through Follow Windows, Light and Dark.
     /// </summary>
     public RelayCommand CycleThemeCommand { get; }
+
+    /// <summary>
+    /// Gets the command that asks for the system information window.
+    /// </summary>
+    /// <remarks>
+    /// The command only raises <see cref="SystemInfoRequested"/>: creating a window is a view concern,
+    /// so it is left to the composition root, which is the only place that knows how to build one.
+    /// </remarks>
+    public RelayCommand ShowSystemInfoCommand { get; }
+
+    /// <summary>
+    /// Occurs when the user asks for the system information window, which the composition root opens.
+    /// </summary>
+    public event EventHandler? SystemInfoRequested;
+
+    /// <summary>
+    /// Gets the hint that documents the global profile toggle hotkey, naming the two slots the shortcut
+    /// switches between.
+    /// </summary>
+    /// <remarks>
+    /// The names are read from the first two slots, so an inline rename is reflected immediately. Before
+    /// <see cref="Initialize"/> has created the slots the default slot names are shown rather than an
+    /// empty hint.
+    /// </remarks>
+    public string HotkeyHint =>
+        $"Ctrl+Alt+Shift+P to toggle between profiles: {GetSlotName(0)} and {GetSlotName(1)}";
+
+    /// <summary>
+    /// Returns the current name of a profile slot for the hotkey hint.
+    /// </summary>
+    /// <param name="index">Zero-based slot index.</param>
+    /// <returns>The slot name, or its default one-based name before the slots were created.</returns>
+    private string GetSlotName(int index)
+    {
+        return index < ProfileSlots.Count && ProfileSlots[index].Name is { Length: > 0 } name
+            ? name
+            : $"Profile {index + 1}";
+    }
 
     /// <summary>
     /// Toggles between profile slot 1 and slot 2, applying the newly selected slot.
@@ -719,6 +758,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         UpdateActiveProfileSlot();
+
+        // The hotkey hint names the first two slots, so it has to be refreshed once their names exist.
+        OnPropertyChanged(nameof(HotkeyHint));
     }
 
     /// <summary>
@@ -754,8 +796,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         _profiles.Profiles[index].Name = slot.Name;
 
-        // The status area shows the active profile's name, so it has to be refreshed as well.
+        // The status area shows the active profile's name and the hotkey hint names the first two slots,
+        // so both have to be refreshed as well.
         OnPropertyChanged(nameof(ActiveProfileSummary));
+        OnPropertyChanged(nameof(HotkeyHint));
 
         if (_isLoading || _disposed)
         {

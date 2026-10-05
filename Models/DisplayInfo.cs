@@ -36,6 +36,18 @@ public sealed record DisplayInfo
     public bool IsPrimary { get; init; }
 
     /// <summary>
+    /// Gets the horizontal resolution of the display's current mode in pixels, or zero when the mode
+    /// could not be read.
+    /// </summary>
+    public int Width { get; init; }
+
+    /// <summary>
+    /// Gets the vertical resolution of the display's current mode in pixels, or zero when the mode
+    /// could not be read.
+    /// </summary>
+    public int Height { get; init; }
+
+    /// <summary>
     /// Gets the numeric NVAPI display id, or <see langword="null"/> when this display could not be
     /// correlated with an NVIDIA display.
     /// </summary>
@@ -52,6 +64,16 @@ public sealed record DisplayInfo
     /// second lookup on every slider change.
     /// </remarks>
     public NvDisplay? NvidiaDisplay { get; init; }
+
+    /// <summary>
+    /// Gets the resolution of the current mode as text, for example <c>3840 x 2160</c>.
+    /// </summary>
+    /// <remarks>
+    /// A display whose mode could not be read says so in words rather than showing "0 x 0", which would
+    /// look like a rendering fault.
+    /// </remarks>
+    public string ResolutionLabel =>
+        Width > 0 && Height > 0 ? $"{Width} x {Height}" : "Resolution not reported";
 
     /// <summary>
     /// Gets a value indicating whether Digital Vibrance and the NVAPI-backed Hue control are

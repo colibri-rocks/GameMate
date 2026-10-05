@@ -1,0 +1,150 @@
+﻿<Window x:Class="GameMate.SystemInfoWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:infra="clr-namespace:GameMate.Infrastructure"
+        mc:Ignorable="d"
+        Title="GameMate - System information"
+        Width="440"
+        MinHeight="240"
+        MaxHeight="620"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WindowBackgroundBrush}"
+        Foreground="{DynamicResource ForegroundBrush}">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibility" />
+        <infra:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibility" />
+
+        <Style x:Key="SectionHeaderStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+        </Style>
+
+        <Style x:Key="FieldLabelStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundMutedBrush}" />
+            <Setter Property="FontSize" Value="11" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <StackPanel Margin="0,0,0,10">
+                    <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="GameMate" />
+                    <TextBlock Text="{Binding SoftwareVersionLabel}" TextWrapping="Wrap" />
+                </StackPanel>
+
+                <!-- Shown only when something could not be read, so the successful state stays clean. -->
+                <TextBlock Margin="0,0,0,8"
+                           Foreground="{DynamicResource ForegroundMutedBrush}"
+                           Text="{Binding Warning}"
+                           TextWrapping="Wrap"
+                           Visibility="{Binding HasWarning, Converter={StaticResource BooleanToVisibility}}" />
+
+                <StackPanel Margin="0,0,0,10">
+                    <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Windows" />
+                    <TextBlock Text="{Binding WindowsEdition}" TextWrapping="Wrap" />
+                    <TextBlock Margin="0,2,0,0"
+                               Style="{StaticResource FieldLabelStyle}"
+                               Text="{Binding WindowsVersion}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+
+                <StackPanel Margin="0,0,0,10">
+                    <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Graphics" />
+
+                    <ItemsControl ItemsSource="{Binding VideoControllers}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,0,0,8">
+                                    <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+                                    <TextBlock Margin="0,2,0,0"
+                                               Style="{StaticResource FieldLabelStyle}"
+                                               Text="{Binding DriverSummary}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Style="{StaticResource FieldLabelStyle}"
+                               Text="No video adapter was reported."
+                               Visibility="{Binding HasVideoControllers, Converter={StaticResource InverseBooleanToVisibility}}" />
+                </StackPanel>
+
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Monitor(s)" />
+
+                    <ItemsControl ItemsSource="{Binding Monitors}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <!-- Fixed width rather than Auto so the labels line up whether or not a
+                                             row carries the primary marker. -->
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Same star glyph the display list uses for the primary display. -->
+                                    <TextBlock Grid.Column="0"
+                                               FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons, Segoe UI Symbol"
+                                               FontSize="12"
+                                               VerticalAlignment="Center"
+                                               Foreground="{DynamicResource AccentBrush}"
+                                               Text="&#xE735;"
+                                               ToolTip="Primary display"
+                                               Visibility="{Binding IsPrimary, Converter={StaticResource BooleanToVisibility}}" />
+
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding DisplayLabel}" TextWrapping="Wrap" />
+                                        <TextBlock Margin="0,2,0,0"
+                                                   Style="{StaticResource FieldLabelStyle}"
+                                                   Text="{Binding ResolutionLabel}" />
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Style="{StaticResource FieldLabelStyle}"
+                               Text="No monitor was detected."
+                               Visibility="{Binding HasMonitors, Converter={StaticResource InverseBooleanToVisibility}}" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="1"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,10,0,0">
+            <Button Margin="0,0,8,0"
+                    Padding="16,6"
+                    Content="Copy"
+                    Click="OnCopyClick"
+                    Background="{DynamicResource ControlBackgroundBrush}"
+                    BorderBrush="{DynamicResource ControlBorderBrush}"
+                    Foreground="{DynamicResource ForegroundBrush}" />
+
+            <!-- IsCancel closes the modal dialog; IsDefault makes Enter do the same as clicking it. -->
+            <Button Padding="16,6"
+                    Content="Close"
+                    IsDefault="True"
+                    IsCancel="True"
+                    Background="{DynamicResource ControlBackgroundBrush}"
+                    BorderBrush="{DynamicResource ControlBorderBrush}"
+                    Foreground="{DynamicResource ForegroundBrush}" />
+        </StackPanel>
+    </Grid>
+</Window>

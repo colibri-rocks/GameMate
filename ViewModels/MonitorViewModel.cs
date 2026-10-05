@@ -58,6 +58,11 @@ public sealed class MonitorViewModel : ObservableObject
     public string DisplayLabel => $"{Display.Ordinal}. {Display.FriendlyName} (Display {Display.Ordinal})";
 
     /// <summary>
+    /// Gets the resolution of the current mode as text, for example <c>3840 x 2160</c>.
+    /// </summary>
+    public string ResolutionLabel => Display.ResolutionLabel;
+
+    /// <summary>
     /// Gets a value indicating whether this is the primary desktop display.
     /// </summary>
     public bool IsPrimary => Display.IsPrimary;

@@ -7,6 +7,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
 
+    <!-- Shown in the system information window and in the executable's Windows file properties. -->
+    <Version>0.3.0</Version>
+
     <!-- NvAPIWrapper resolves nvapi64.dll by name, and that module only exists for 64-bit
          processes: in an x86 host the NVIDIA calls would fail at runtime rather than at build
          time. AnyCPU stays in the platform list so the existing solution configuration keeps
@@ -25,6 +28,9 @@
     <PackageReference Include="NvAPIWrapper.Net" Version="0.8.1.101" />
     <!-- Windows display device paths, used to correlate the OS monitors with NVIDIA displays. -->
     <PackageReference Include="WindowsDisplayAPI" Version="1.3.0.13" />
+    <!-- WMI: reports the video adapter model and driver version for every vendor, including on
+         hybrid-graphics machines where each adapter is listed separately. -->
+    <PackageReference Include="System.Management" Version="10.0.12" />
   </ItemGroup>
 
 </Project>

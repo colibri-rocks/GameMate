@@ -26,6 +26,11 @@ public partial class MainWindow : Window
     private readonly ProfileHotkeyService _hotkeyService = new();
 
     /// <summary>
+    /// Reads the machine information shown by the system information window.
+    /// </summary>
+    private readonly ISystemInfoService _systemInfoService;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="MainWindow"/> class and wires the concrete
     /// services, so the window owns the only composition root of the application.
     /// </summary>
@@ -36,12 +41,18 @@ public partial class MainWindow : Window
         // Assigned before the view model so the same manager instance can be injected into it.
         _themeManager = ThemeManager.Instance;
 
+        // One instance is shared: it caches the NVAPI probe that both the colour controls and the
+        // system information window depend on, so probing twice would be wasteful.
+        DisplayService displayService = new();
+
         _viewModel = new MainViewModel(
-            new DisplayService(),
+            displayService,
             new GammaRampDevice(),
             new NvidiaColorService(),
             new ProfileStore(),
             _themeManager);
+
+        _systemInfoService = new SystemInfoService(displayService);
 
         DataContext = _viewModel;
 
@@ -51,6 +62,10 @@ public partial class MainWindow : Window
 
         // Re-applies the native chrome whenever the user cycles to another theme.
         _themeManager.ThemeChanged += OnThemeChanged;
+
+        // Creating a window is a view concern, so the view model only asks for it and this window builds
+        // it, which keeps the view model free of any dependency on WPF windows.
+        _viewModel.SystemInfoRequested += OnSystemInfoRequested;
 
         // The hotkey has to work while GameMate is unfocused, so it is registered globally rather than
         // as a key binding.
@@ -89,6 +104,7 @@ public partial class MainWindow : Window
     {
         // The theme manager outlives this window, so the subscription has to be released explicitly.
         _themeManager.ThemeChanged -= OnThemeChanged;
+        _viewModel.SystemInfoRequested -= OnSystemInfoRequested;
 
         // Releasing the chord here matters: an unregistered global hotkey stays owned by the process
         // until it exits, so a relaunch would fail to register it again.
@@ -135,6 +151,30 @@ public partial class MainWindow : Window
     /// <param name="e">Event data.</param>
     private void OnThemeChanged(object? sender, EventArgs e)
     {
+        _themeManager.ApplyNativeWindowTheme(this);
+    }
+
+    /// <summary>
+    /// Opens the system information window on behalf of the view model.
+    /// </summary>
+    /// <param name="sender">View model that raised the request.</param>
+    /// <param name="e">Event data.</param>
+    private void OnSystemInfoRequested(object? sender, EventArgs e)
+    {
+        // The monitors were already enumerated at startup, so the window reuses that list instead of
+        // enumerating the displays a second time; only the operating system and adapter data are read
+        // fresh, because they are not available anywhere else.
+        IReadOnlyList<MonitorViewModel> monitors = _viewModel.Displays.ToList();
+
+        SystemInfoViewModel viewModel = new(_systemInfoService, monitors);
+        SystemInfoWindow window = new(viewModel, _themeManager) { Owner = this };
+
+        // Modal on purpose: the information is a snapshot, and the window must not stay open while the
+        // user changes the very settings it describes.
+        window.ShowDialog();
+
+        // ApplyNativeWindowTheme remembers a single window, so the main window reclaims that ownership
+        // to keep a later theme change updating the title bar of the window that is still open.
         _themeManager.ApplyNativeWindowTheme(this);
     }
 
