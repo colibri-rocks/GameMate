@@ -20,5 +20,8 @@ v0.1 - Initial release (pre)
 
 v0.2 - Added hotkey Ctrl+Alt+Shift+P to toggle between "Profile 1" and "Profile 2", cosmetic changes
 
-<img width="1362" height="531" alt="gamemate1" src="https://github.com/user-attachments/assets/0dc001db-f691-451a-9353-f392f57be910" />
-<img width="1362" height="531" alt="gamemate2" src="https://github.com/user-attachments/assets/843087b2-eecb-40aa-a81f-24cc5bc730d9" />
+v0.3 - Added system info button, cosmetic changes
+
+<img width="1362" height="531" alt="image" src="https://github.com/user-attachments/assets/07ece76f-5924-459f-854d-603da572e39d" />
+<img width="1362" height="531" alt="image" src="https://github.com/user-attachments/assets/39514c75-d77e-4624-8fa4-2bb8e49d742e" />
+<img width="642" height="637" alt="image" src="https://github.com/user-attachments/assets/4279f880-71e3-411c-baf2-830c08be5033" />
