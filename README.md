@@ -17,8 +17,11 @@ Current limitations - Windows 10/11, NVIDIA videocard (On AMD/Intel basic settin
 Changelist:
 
 v0.1 - Initial release (pre)
+
 v0.2 - Added hotkey Ctrl+Alt+Shift+P to toggle between "Profile 1" and "Profile 2", cosmetic changes
+
 v0.3 - Added system info button, cosmetic changes
+
 v0.4 - Info window improvements
 
 <img width="1362" height="531" alt="image" src="https://github.com/user-attachments/assets/f03aad3f-0149-4811-ba49-7dabf2b4770b" />
