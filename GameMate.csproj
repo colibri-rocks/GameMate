@@ -8,7 +8,7 @@
     <UseWPF>true</UseWPF>
 
     <!-- Shown in the system information window and in the executable's Windows file properties. -->
-    <Version>0.3.0</Version>
+    <Version>0.5.0</Version>
 
     <!-- NvAPIWrapper resolves nvapi64.dll by name, and that module only exists for 64-bit
          processes: in an x86 host the NVIDIA calls would fail at runtime rather than at build

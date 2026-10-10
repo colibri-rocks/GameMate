@@ -105,16 +105,19 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public event EventHandler? SystemInfoRequested;
 
     /// <summary>
-    /// Gets the hint that documents the global profile toggle hotkey, naming the two slots the shortcut
-    /// switches between.
+    /// Gets the key combination of the global profile toggle, shown in bold in the window hint.
     /// </summary>
-    /// <remarks>
-    /// The names are read from the first two slots, so an inline rename is reflected immediately. Before
-    /// <see cref="Initialize"/> has created the slots the default slot names are shown rather than an
-    /// empty hint.
-    /// </remarks>
-    public string HotkeyHint =>
-        $"Ctrl+Alt+Shift+P to toggle between profiles: {GetSlotName(0)} and {GetSlotName(1)}";
+    public string HotkeyCombination => "Ctrl+Alt+Shift+P";
+
+    /// <summary>
+    /// Gets the name of the first profile slot, shown in bold in the window hint.
+    /// </summary>
+    public string ProfileOneName => GetSlotName(0);
+
+    /// <summary>
+    /// Gets the name of the second profile slot, shown in bold in the window hint.
+    /// </summary>
+    public string ProfileTwoName => GetSlotName(1);
 
     /// <summary>
     /// Returns the current name of a profile slot for the hotkey hint.
@@ -759,8 +762,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         UpdateActiveProfileSlot();
 
-        // The hotkey hint names the first two slots, so it has to be refreshed once their names exist.
-        OnPropertyChanged(nameof(HotkeyHint));
+        // The hint names the first two slots, so both names have to be refreshed once they exist.
+        OnPropertyChanged(nameof(ProfileOneName));
+        OnPropertyChanged(nameof(ProfileTwoName));
     }
 
     /// <summary>
@@ -799,7 +803,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         // The status area shows the active profile's name and the hotkey hint names the first two slots,
         // so both have to be refreshed as well.
         OnPropertyChanged(nameof(ActiveProfileSummary));
-        OnPropertyChanged(nameof(HotkeyHint));
+        OnPropertyChanged(nameof(ProfileOneName));
+        OnPropertyChanged(nameof(ProfileTwoName));
 
         if (_isLoading || _disposed)
         {

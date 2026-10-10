@@ -35,6 +35,10 @@ namespace GameMate.Services;
 /// <c>PathInfo.Resolution</c> is a <c>System.Drawing.Size</c> and <c>PathInfo.IsModeInformationAvailable</c>
 /// says whether it holds a usable mode, which is how the display resolution is reported.
 /// </description></item>
+/// <item><description>
+/// <c>PathInfo.DisplaySource.Adapter</c> is a <c>PathDisplayAdapter</c> whose <c>DevicePath</c> identifies
+/// the GPU driving the monitor, which is how each monitor is attributed to a video controller.
+/// </description></item>
 /// </list>
 /// </remarks>
 public sealed class DisplayService : IDisplayService
@@ -209,6 +213,7 @@ public sealed class DisplayService : IDisplayService
                 IsPrimary = path.IsGDIPrimary,
                 Width = width,
                 Height = height,
+                AdapterKey = AdapterKeyNormalizer.Normalize(path.DisplaySource?.Adapter?.DevicePath),
                 NvidiaDisplayId = nvidiaDisplay?.DisplayDevice?.DisplayId,
                 NvidiaDisplay = nvidiaDisplay,
             });

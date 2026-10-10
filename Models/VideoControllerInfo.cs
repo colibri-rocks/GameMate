@@ -48,6 +48,12 @@ public sealed record VideoControllerInfo
     public string? NvidiaDriverVersion { get; init; }
 
     /// <summary>
+    /// Gets the normalised PCI path of this adapter, used to match the monitors it drives. Empty when the
+    /// operating system did not report one.
+    /// </summary>
+    public string AdapterKey { get; init; } = string.Empty;
+
+    /// <summary>
     /// Gets the single line shown under the adapter name, combining the driver version and date.
     /// </summary>
     /// <remarks>

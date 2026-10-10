@@ -76,6 +76,12 @@ public sealed record DisplayInfo
         Width > 0 && Height > 0 ? $"{Width} x {Height}" : "Resolution not reported";
 
     /// <summary>
+    /// Gets the normalised PCI path of the video adapter that drives this monitor, used to attribute the
+    /// monitor to a video controller. Empty when the adapter could not be determined.
+    /// </summary>
+    public string AdapterKey { get; init; } = string.Empty;
+
+    /// <summary>
     /// Gets a value indicating whether Digital Vibrance and the NVAPI-backed Hue control are
     /// available for this display.
     /// </summary>

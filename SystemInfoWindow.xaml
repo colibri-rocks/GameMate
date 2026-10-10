@@ -71,18 +71,57 @@
                                TextWrapping="Wrap" />
                 </StackPanel>
 
-                <StackPanel Margin="0,0,0,10">
+                <StackPanel>
                     <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Graphics" />
 
-                    <ItemsControl ItemsSource="{Binding VideoControllers}">
+                    <ItemsControl ItemsSource="{Binding GraphicsEntries}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <StackPanel Margin="0,0,0,8">
-                                    <TextBlock Text="{Binding DisplayName}" TextWrapping="Wrap" />
+                                <StackPanel Margin="0,0,0,10">
+                                    <TextBlock Text="{Binding Adapter.DisplayName}" TextWrapping="Wrap" />
                                     <TextBlock Margin="0,2,0,0"
                                                Style="{StaticResource FieldLabelStyle}"
-                                               Text="{Binding DriverSummary}"
+                                               Text="{Binding Adapter.DriverSummary}"
                                                TextWrapping="Wrap" />
+
+                                    <!-- Monitors driven by this adapter, indented so they sit under it. -->
+                                    <ItemsControl ItemsSource="{Binding Monitors}" Margin="12,6,0,0">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,0,0,6">
+                                                    <Grid.ColumnDefinitions>
+                                                        <!-- Fixed width rather than Auto so the labels line up
+                                                             whether or not a row carries the primary marker. -->
+                                                        <ColumnDefinition Width="16" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <!-- Same star glyph the display list uses for the primary display. -->
+                                                    <TextBlock Grid.Column="0"
+                                                               FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons, Segoe UI Symbol"
+                                                               FontSize="12"
+                                                               VerticalAlignment="Center"
+                                                               Foreground="{DynamicResource AccentBrush}"
+                                                               Text="&#xE735;"
+                                                               ToolTip="Primary display"
+                                                               Visibility="{Binding IsPrimary, Converter={StaticResource BooleanToVisibility}}" />
+
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock Text="{Binding DisplayLabel}" TextWrapping="Wrap" />
+                                                        <TextBlock Margin="0,2,0,0"
+                                                                   Style="{StaticResource FieldLabelStyle}"
+                                                                   Text="{Binding ResolutionLabel}" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <!-- Shown only when the adapter drives no output. -->
+                                    <TextBlock Margin="12,6,0,0"
+                                               Style="{StaticResource FieldLabelStyle}"
+                                               Text="No monitors connected"
+                                               Visibility="{Binding HasMonitors, Converter={StaticResource InverseBooleanToVisibility}}" />
                                 </StackPanel>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -93,44 +132,23 @@
                                Visibility="{Binding HasVideoControllers, Converter={StaticResource InverseBooleanToVisibility}}" />
                 </StackPanel>
 
-                <StackPanel>
-                    <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Monitor(s)" />
+                <!-- Only shown when the correlation failed for some monitor, so nothing disappears silently. -->
+                <StackPanel Margin="0,10,0,0"
+                            Visibility="{Binding HasUnmatchedMonitors, Converter={StaticResource BooleanToVisibility}}">
+                    <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Unmatched monitors" />
 
-                    <ItemsControl ItemsSource="{Binding Monitors}">
+                    <ItemsControl ItemsSource="{Binding UnmatchedMonitors}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Grid Margin="0,0,0,8">
-                                    <Grid.ColumnDefinitions>
-                                        <!-- Fixed width rather than Auto so the labels line up whether or not a
-                                             row carries the primary marker. -->
-                                        <ColumnDefinition Width="16" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-
-                                    <!-- Same star glyph the display list uses for the primary display. -->
-                                    <TextBlock Grid.Column="0"
-                                               FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons, Segoe UI Symbol"
-                                               FontSize="12"
-                                               VerticalAlignment="Center"
-                                               Foreground="{DynamicResource AccentBrush}"
-                                               Text="&#xE735;"
-                                               ToolTip="Primary display"
-                                               Visibility="{Binding IsPrimary, Converter={StaticResource BooleanToVisibility}}" />
-
-                                    <StackPanel Grid.Column="1">
-                                        <TextBlock Text="{Binding DisplayLabel}" TextWrapping="Wrap" />
-                                        <TextBlock Margin="0,2,0,0"
-                                                   Style="{StaticResource FieldLabelStyle}"
-                                                   Text="{Binding ResolutionLabel}" />
-                                    </StackPanel>
-                                </Grid>
+                                <StackPanel Margin="0,0,0,6">
+                                    <TextBlock Text="{Binding DisplayLabel}" TextWrapping="Wrap" />
+                                    <TextBlock Margin="0,2,0,0"
+                                               Style="{StaticResource FieldLabelStyle}"
+                                               Text="{Binding ResolutionLabel}" />
+                                </StackPanel>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-
-                    <TextBlock Style="{StaticResource FieldLabelStyle}"
-                               Text="No monitor was detected."
-                               Visibility="{Binding HasMonitors, Converter={StaticResource InverseBooleanToVisibility}}" />
                 </StackPanel>
             </StackPanel>
             </ScrollViewer>

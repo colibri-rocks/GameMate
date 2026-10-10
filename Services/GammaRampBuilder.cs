@@ -54,8 +54,9 @@ public static class GammaRampBuilder
     /// <summary>Highest contrast value the ramp accepts; 0 is neutral.</summary>
     public const int ContrastMaximum = 100;
 
-    /// <summary>Lowest display gamma the ramp accepts; 1.0 is neutral.</summary>
-    public const double GammaMinimum = 0.3;
+    /// <summary>Lowest display gamma the ramp accepts; 1.0 is neutral. One third, so that the
+    /// logarithmic slider centred on 1.0 reaches exactly this value at its left end.</summary>
+    public const double GammaMinimum = 1.0 / 3.0;
 
     /// <summary>Highest display gamma the ramp accepts; 1.0 is neutral.</summary>
     public const double GammaMaximum = 3.0;

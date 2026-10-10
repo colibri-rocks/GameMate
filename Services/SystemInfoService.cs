@@ -244,7 +244,7 @@ public sealed class SystemInfoService : ISystemInfoService
             List<VideoControllerInfo> controllers = [];
 
             using ManagementObjectSearcher searcher = new(
-                "SELECT Name, DriverVersion, DriverDate FROM Win32_VideoController");
+                "SELECT Name, DriverVersion, DriverDate, PNPDeviceID FROM Win32_VideoController");
 
             using ManagementObjectCollection results = searcher.Get();
 
@@ -266,6 +266,7 @@ public sealed class SystemInfoService : ISystemInfoService
                             ? nvidiaDriverVersion
                             : null,
                         IsIntegrated = IsIntegratedAdapter(name),
+                        AdapterKey = AdapterKeyNormalizer.Normalize(adapter["PNPDeviceID"] as string),
                         DriverVersion = adapter["DriverVersion"] as string,
 
                         // DriverDate is a CIM_DATETIME; WMI maps it to DateTime, but a driver that

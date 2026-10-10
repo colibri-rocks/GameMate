@@ -16,6 +16,7 @@
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibility" />
         <infra:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibility" />
+        <infra:GammaSliderPositionConverter x:Key="GammaSliderPosition" />
 
         <Style x:Key="ControlLabelStyle" TargetType="TextBlock">
             <Setter Property="VerticalAlignment" Value="Center" />
@@ -205,7 +206,12 @@
                     <TextBlock Margin="0,4,0,0"
                                FontSize="11"
                                Foreground="{DynamicResource ForegroundMutedBrush}"
-                               TextWrapping="Wrap" Text="{Binding HotkeyHint}" />
+                               TextWrapping="Wrap">
+                        <!-- Bold only the things the user acts on directly; the rest stays muted.
+                             Mode=OneWay is required: Run.Text binds TwoWay by default, which a read-only
+                             computed property cannot satisfy. -->
+                        <Run FontWeight="Bold" Text="{Binding HotkeyCombination, Mode=OneWay}" /><Run Text=" to toggle between profiles: " /><Run FontWeight="Bold" Text="{Binding ProfileOneName, Mode=OneWay}" /><Run Text=" and " /><Run FontWeight="Bold" Text="{Binding ProfileTwoName, Mode=OneWay}" /><Run Text=". Double-click a profile button to rename it." />
+                    </TextBlock>
                 </StackPanel>
 
                 <!-- MaxHeight caps the list at 4 rows; VerticalAlignment Top lets it stay compact while
@@ -329,10 +335,12 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Style="{StaticResource ControlIconStyle}" Text="&#xE7B3;" />
                     <TextBlock Grid.Column="1" Text="Gamma" Style="{StaticResource ControlLabelStyle}" />
+                    <!-- Gamma is multiplicative, so the slider is logarithmic: position 0 is the neutral 1.0
+                         and the ends are 1/3 and 3.0. The value label below still shows gamma. -->
                     <Slider Grid.Column="2"
-                            Minimum="0.3" Maximum="3"
+                            Minimum="-1" Maximum="1"
                             TickFrequency="0.05" IsSnapToTickEnabled="True"
-                            Value="{Binding SelectedDisplay.Gamma, Mode=TwoWay}" />
+                            Value="{Binding SelectedDisplay.Gamma, Mode=TwoWay, Converter={StaticResource GammaSliderPosition}}" />
                     <TextBlock Grid.Column="3"
                                Text="{Binding SelectedDisplay.Gamma, StringFormat={}{0:0.00}}"
                                Style="{StaticResource ControlValueStyle}" />

@@ -49,6 +49,8 @@ public sealed class SystemInfoViewModel : ObservableObject
             Monitors.Add(monitor);
         }
 
+        BuildGraphicsEntries();
+
         // Built once here: the window content cannot change while it is open, so there is no reason to
         // rebuild the same text on every copy.
         ReportText = BuildReport();
@@ -112,6 +114,22 @@ public sealed class SystemInfoViewModel : ObservableObject
     public ObservableCollection<FeatureGroup> FeatureGroups { get; } = [];
 
     /// <summary>
+    /// Gets the merged Graphics content: every video adapter with the monitors it drives.
+    /// </summary>
+    public ObservableCollection<GraphicsAdapterEntry> GraphicsEntries { get; } = [];
+
+    /// <summary>
+    /// Gets the monitors that could not be attributed to a video adapter, so none of them disappears from
+    /// the window when the correlation fails.
+    /// </summary>
+    public ObservableCollection<MonitorViewModel> UnmatchedMonitors { get; } = [];
+
+    /// <summary>
+    /// Gets a value indicating whether the unmatched monitors group has to be shown.
+    /// </summary>
+    public bool HasUnmatchedMonitors => UnmatchedMonitors.Count > 0;
+
+    /// <summary>
     /// Gets the complete window content as plain text, ready to be placed on the clipboard.
     /// </summary>
     /// <remarks>
@@ -162,6 +180,48 @@ public sealed class SystemInfoViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Attributes each monitor to the video adapter that drives it and fills
+    /// <see cref="GraphicsEntries"/>.
+    /// </summary>
+    /// <remarks>
+    /// Matching is done on the normalised PCI adapter path, which is the only identifier the display
+    /// configuration API and WMI spell the same way. A monitor whose adapter key matches nothing is kept
+    /// in <see cref="UnmatchedMonitors"/> rather than dropped, and an adapter with no monitors still gets
+    /// an entry so it can report that state.
+    /// </remarks>
+    private void BuildGraphicsEntries()
+    {
+        HashSet<MonitorViewModel> attributed = [];
+
+        foreach (VideoControllerInfo adapter in VideoControllers)
+        {
+            List<MonitorViewModel> driven = [];
+
+            if (adapter.AdapterKey.Length > 0)
+            {
+                foreach (MonitorViewModel monitor in Monitors)
+                {
+                    if (string.Equals(monitor.Display.AdapterKey, adapter.AdapterKey, StringComparison.OrdinalIgnoreCase))
+                    {
+                        driven.Add(monitor);
+                        attributed.Add(monitor);
+                    }
+                }
+            }
+
+            GraphicsEntries.Add(new GraphicsAdapterEntry { Adapter = adapter, Monitors = driven });
+        }
+
+        foreach (MonitorViewModel monitor in Monitors)
+        {
+            if (!attributed.Contains(monitor))
+            {
+                UnmatchedMonitors.Add(monitor);
+            }
+        }
+    }
+
+    /// <summary>
     /// Renders the whole window content as plain text.
     /// </summary>
     /// <returns>The report, without a trailing line break.</returns>
@@ -188,10 +248,26 @@ public sealed class SystemInfoViewModel : ObservableObject
 
         if (HasVideoControllers)
         {
-            foreach (VideoControllerInfo controller in VideoControllers)
+            foreach (GraphicsAdapterEntry entry in GraphicsEntries)
             {
-                builder.AppendLine(controller.Name);
-                builder.AppendLine(controller.DriverSummary);
+                builder.AppendLine(entry.Adapter.DisplayName);
+                builder.AppendLine(entry.Adapter.DriverSummary);
+
+                if (entry.HasMonitors)
+                {
+                    foreach (MonitorViewModel monitor in entry.Monitors)
+                    {
+                        // The marker flags the primary display and the indentation keeps the monitors
+                        // visually beneath the adapter that drives them.
+                        string marker = monitor.IsPrimary ? "* " : "  ";
+
+                        builder.AppendLine($"  {marker}{monitor.DisplayLabel} - {monitor.ResolutionLabel}");
+                    }
+                }
+                else
+                {
+                    builder.AppendLine("  No monitors connected");
+                }
             }
         }
         else
@@ -199,23 +275,15 @@ public sealed class SystemInfoViewModel : ObservableObject
             builder.AppendLine("No video adapter was reported.");
         }
 
-        builder.AppendLine();
-        builder.AppendLine("Monitor(s)");
-
-        if (HasMonitors)
+        if (HasUnmatchedMonitors)
         {
-            foreach (MonitorViewModel monitor in Monitors)
+            builder.AppendLine();
+            builder.AppendLine("Unmatched monitors");
+
+            foreach (MonitorViewModel monitor in UnmatchedMonitors)
             {
-                // A leading marker flags the primary display, and the remaining rows are padded to the
-                // same width so the labels still line up once the text is pasted somewhere else.
-                string marker = monitor.IsPrimary ? "* " : "  ";
-
-                builder.AppendLine($"{marker}{monitor.DisplayLabel} - {monitor.ResolutionLabel}");
+                builder.AppendLine($"  {monitor.DisplayLabel} - {monitor.ResolutionLabel}");
             }
-        }
-        else
-        {
-            builder.AppendLine("No monitor was detected.");
         }
 
         builder.AppendLine();
