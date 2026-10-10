@@ -24,6 +24,8 @@ v0.3 - Added system info button, cosmetic changes
 
 v0.4 - Info window improvements
 
-<img width="1362" height="531" alt="image" src="https://github.com/user-attachments/assets/f03aad3f-0149-4811-ba49-7dabf2b4770b" />
-<img width="1362" height="531" alt="image" src="https://github.com/user-attachments/assets/0ccd6b96-7443-4e63-93ae-7ffa3fb7bf2a" />
-<img width="942" height="670" alt="image" src="https://github.com/user-attachments/assets/b3a8590f-4e84-460e-9cbc-540a7079fb7c" />
+v0.5 - Added information GPU-Monitor, cosmetic changes
+
+<img width="1362" height="531" alt="image" src="https://github.com/user-attachments/assets/c3f79585-60b3-451a-8eb3-1b0650fcf2f3" />
+<img width="1362" height="531" alt="image" src="https://github.com/user-attachments/assets/ad8e3418-950d-4234-a112-3a9d01b6280e" />
+<img width="942" height="672" alt="image" src="https://github.com/user-attachments/assets/7449d4b8-7c19-4c57-a413-6f243353c143" />
