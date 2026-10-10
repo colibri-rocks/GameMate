@@ -22,6 +22,8 @@ v0.2 - Added hotkey Ctrl+Alt+Shift+P to toggle between "Profile 1" and "Profile 
 
 v0.3 - Added system info button, cosmetic changes
 
-<img width="1362" height="531" alt="image" src="https://github.com/user-attachments/assets/07ece76f-5924-459f-854d-603da572e39d" />
-<img width="1362" height="531" alt="image" src="https://github.com/user-attachments/assets/39514c75-d77e-4624-8fa4-2bb8e49d742e" />
-<img width="642" height="637" alt="image" src="https://github.com/user-attachments/assets/4279f880-71e3-411c-baf2-830c08be5033" />
+v0.4 - Info window improvements
+
+<img width="1362" height="531" alt="image" src="https://github.com/user-attachments/assets/f03aad3f-0149-4811-ba49-7dabf2b4770b" />
+<img width="1362" height="531" alt="image" src="https://github.com/user-attachments/assets/0ccd6b96-7443-4e63-93ae-7ffa3fb7bf2a" />
+<img width="942" height="670" alt="image" src="https://github.com/user-attachments/assets/b3a8590f-4e84-460e-9cbc-540a7079fb7c" />
