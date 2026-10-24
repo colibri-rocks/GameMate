@@ -26,6 +26,8 @@ v0.4 - Info window improvements
 
 v0.5 - Added information GPU-Monitor, cosmetic changes
 
-<img width="1362" height="531" alt="image" src="https://github.com/user-attachments/assets/c3f79585-60b3-451a-8eb3-1b0650fcf2f3" />
-<img width="1362" height="531" alt="image" src="https://github.com/user-attachments/assets/ad8e3418-950d-4234-a112-3a9d01b6280e" />
-<img width="942" height="672" alt="image" src="https://github.com/user-attachments/assets/7449d4b8-7c19-4c57-a413-6f243353c143" />
+v0.6 - QoL changes
+
+<img width="1362" height="531" alt="image" src="https://github.com/user-attachments/assets/ad7b6c9d-dd1e-4bb8-aa32-ce8c218abc07" />
+<img width="2560" height="1368" alt="image" src="https://github.com/user-attachments/assets/2de20575-6759-4614-a6f6-94a517d1132a" />
+<img width="2560" height="1368" alt="image" src="https://github.com/user-attachments/assets/f144f3a8-e55b-4440-8da5-75c38625f02a" />
