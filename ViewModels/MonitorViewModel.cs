@@ -1,5 +1,6 @@
 ﻿using GameMate.Infrastructure;
 using GameMate.Models;
+using GameMate.Services;
 
 namespace GameMate.ViewModels;
 
@@ -129,12 +130,15 @@ public sealed class MonitorViewModel : ObservableObject
         get => _settings.Brightness;
         set
         {
-            if (_settings.Brightness == value)
+            // Typed input bypasses the slider's own Minimum and Maximum, so every path is clamped here.
+            int clamped = Math.Clamp(value, -100, 100);
+
+            if (_settings.Brightness == clamped)
             {
                 return;
             }
 
-            _settings = _settings with { Brightness = value };
+            _settings = _settings with { Brightness = clamped };
             OnPropertyChanged();
         }
     }
@@ -147,12 +151,14 @@ public sealed class MonitorViewModel : ObservableObject
         get => _settings.Contrast;
         set
         {
-            if (_settings.Contrast == value)
+            int clamped = Math.Clamp(value, -100, 100);
+
+            if (_settings.Contrast == clamped)
             {
                 return;
             }
 
-            _settings = _settings with { Contrast = value };
+            _settings = _settings with { Contrast = clamped };
             OnPropertyChanged();
         }
     }
@@ -165,12 +171,15 @@ public sealed class MonitorViewModel : ObservableObject
         get => _settings.Gamma;
         set
         {
-            if (_settings.Gamma.Equals(value))
+            // The ramp builder rejects anything outside its own domain, so a typed gamma is kept inside it.
+            double clamped = Math.Clamp(value, GammaRampBuilder.GammaMinimum, GammaRampBuilder.GammaMaximum);
+
+            if (_settings.Gamma.Equals(clamped))
             {
                 return;
             }
 
-            _settings = _settings with { Gamma = value };
+            _settings = _settings with { Gamma = clamped };
             OnPropertyChanged();
         }
     }
@@ -183,12 +192,16 @@ public sealed class MonitorViewModel : ObservableObject
         get => _settings.Vibrance;
         set
         {
-            if (_settings.Vibrance == value)
+            // The driver range can arrive after the first assignment, so the maximum is never allowed to
+            // fall below the minimum.
+            int clamped = Math.Clamp(value, VibranceMinimum, Math.Max(VibranceMinimum, VibranceMaximum));
+
+            if (_settings.Vibrance == clamped)
             {
                 return;
             }
 
-            _settings = _settings with { Vibrance = value };
+            _settings = _settings with { Vibrance = clamped };
             OnPropertyChanged();
         }
     }
@@ -201,12 +214,14 @@ public sealed class MonitorViewModel : ObservableObject
         get => _settings.Hue;
         set
         {
-            if (_settings.Hue == value)
+            int clamped = Math.Clamp(value, -180, 180);
+
+            if (_settings.Hue == clamped)
             {
                 return;
             }
 
-            _settings = _settings with { Hue = value };
+            _settings = _settings with { Hue = clamped };
             OnPropertyChanged();
         }
     }

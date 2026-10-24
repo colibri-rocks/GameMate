@@ -1,5 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Input;
 using GameMate.Services;
 using GameMate.ViewModels;
 
@@ -204,6 +206,108 @@ public partial class MainWindow : Window
         if (sender is FrameworkElement { DataContext: ProfileSlotViewModel slot })
         {
             slot.CommitRenameCommand.Execute(null);
+        }
+    }
+
+    /// <summary>
+    /// Re-selects the text of a value box when it becomes visible, so typing immediately replaces the
+    /// current number instead of appending to it.
+    /// </summary>
+    /// <param name="sender">Text box whose visibility changed.</param>
+    /// <param name="e">Change data.</param>
+    private void OnValueBoxVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (sender is TextBox { IsVisible: true } textBox)
+        {
+            textBox.SelectAll();
+        }
+    }
+
+    /// <summary>
+    /// Commits a value box on Enter and restores the committed value on Escape.
+    /// </summary>
+    /// <param name="sender">Text box that raised the key event.</param>
+    /// <param name="e">Key data.</param>
+    private void OnValueBoxKeyDown(object sender, KeyEventArgs e)
+    {
+        if (sender is not TextBox textBox)
+        {
+            return;
+        }
+
+        if (e.Key == Key.Enter)
+        {
+            CommitValueBox(textBox);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            // Any pending edit is discarded, so Escape always returns to what the display currently holds.
+            textBox.GetBindingExpression(TextBox.TextProperty)?.UpdateTarget();
+            textBox.SelectAll();
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>
+    /// Commits a value box when it loses focus.
+    /// </summary>
+    /// <param name="sender">Text box that lost focus.</param>
+    /// <param name="e">Event data.</param>
+    private void OnValueBoxLostFocus(object sender, RoutedEventArgs e) => CommitValueBox(sender);
+
+    /// <summary>
+    /// Pushes the typed text into the view model and then re-reads it back.
+    /// </summary>
+    /// <param name="sender">Text box to commit.</param>
+    private static void CommitValueBox(object sender)
+    {
+        if (sender is not TextBox textBox)
+        {
+            return;
+        }
+
+        BindingExpression? expression = textBox.GetBindingExpression(TextBox.TextProperty);
+
+        if (expression is null)
+        {
+            return;
+        }
+
+        try
+        {
+            expression.UpdateSource();
+        }
+        catch (FormatException)
+        {
+            // Conversion is handled by the binding rather than by us, so this only guards against a
+            // provider that throws instead of recording a validation error.
+        }
+
+        // Re-reading covers both cases: text that could not be converted is replaced by the previous value,
+        // and a value the view model clamped is shown as the clamped number rather than as typed.
+        expression.UpdateTarget();
+        textBox.SelectAll();
+    }
+
+    /// <summary>
+    /// Ends value box editing when the user clicks elsewhere in the window.
+    /// </summary>
+    /// <param name="sender">Window that received the mouse down.</param>
+    /// <param name="e">Mouse data.</param>
+    /// <remarks>
+    /// A click on a non-focusable element does not move keyboard focus, so without this the box would keep
+    /// the caret after a click that looks like it landed outside it. Moving the focus to the root grid raises
+    /// <see cref="UIElement.LostFocus"/> on the box, which is what commits the typed value.
+    /// </remarks>
+    private void OnWindowPreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        // IsMouseOver is evaluated before the click is dispatched, so it says exactly whether this press
+        // landed inside the focused box. When it landed inside another box, focusing the root grid here is
+        // harmless: that box takes focus itself while it handles the same click.
+        if (Keyboard.FocusedElement is TextBox beingEdited && !beingEdited.IsMouseOver)
+        {
+            RootGrid.Focus();
         }
     }
 }

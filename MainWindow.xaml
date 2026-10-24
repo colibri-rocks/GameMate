@@ -12,7 +12,8 @@
         SizeToContent="Height"
         MaxHeight="760"
         Background="{DynamicResource WindowBackgroundBrush}"
-        Foreground="{DynamicResource ForegroundBrush}">
+        Foreground="{DynamicResource ForegroundBrush}"
+        PreviewMouseDown="OnWindowPreviewMouseDown">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibility" />
         <infra:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibility" />
@@ -27,6 +28,22 @@
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="HorizontalAlignment" Value="Right" />
             <Setter Property="MinWidth" Value="46" />
+        </Style>
+
+        <!-- Editable twin of ControlValueStyle: same width and right alignment, so swapping the value for an
+             editable box does not shift the rows. -->
+        <Style x:Key="ControlValueBoxStyle" TargetType="TextBox">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="TextAlignment" Value="Right" />
+            <!-- The value column is only 52 px wide, so the minimum is trimmed to 40 to leave room for the
+                 gap; with Stretch the box still fills whatever remains. -->
+            <Setter Property="MinWidth" Value="40" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+            <Setter Property="Padding" Value="2,1" />
+            <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlBorderBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}" />
         </Style>
 
         <!-- Icons for the five colour settings. The font chain ends in Segoe UI Symbol so a row still
@@ -128,7 +145,11 @@
         </Style>
     </Window.Resources>
 
-    <Grid Margin="18,18,18,6">
+    <!-- Focusable so focus can be moved off a value box when the user clicks elsewhere: WPF does not
+         move keyboard focus when a click lands on a non-focusable element such as a label or a panel. -->
+    <Grid x:Name="RootGrid"
+          Margin="18,18,18,6"
+          Focusable="True">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -299,13 +320,18 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Style="{StaticResource ControlIconStyle}" Text="&#xE706;" />
                     <TextBlock Grid.Column="1" Text="Brightness" Style="{StaticResource ControlLabelStyle}" />
+                    <!-- Continuous drag: a step of 1 is the finest the integer model allows, so snapping to
+                         tick marks only made the thumb jump. SmallChange keeps the arrow keys at one unit. -->
                     <Slider Grid.Column="2"
                             Minimum="-100" Maximum="100"
-                            TickFrequency="1" IsSnapToTickEnabled="True"
+                            SmallChange="1" LargeChange="10"
                             Value="{Binding SelectedDisplay.Brightness, Mode=TwoWay}" />
-                    <TextBlock Grid.Column="3"
-                               Text="{Binding SelectedDisplay.Brightness}"
-                               Style="{StaticResource ControlValueStyle}" />
+                    <TextBox Grid.Column="3"
+                             Style="{StaticResource ControlValueBoxStyle}"
+                             Text="{Binding SelectedDisplay.Brightness, UpdateSourceTrigger=Explicit}"
+                             IsVisibleChanged="OnValueBoxVisibleChanged"
+                             KeyDown="OnValueBoxKeyDown"
+                             LostFocus="OnValueBoxLostFocus" />
                 </Grid>
 
                 <Grid Margin="0,0,0,10">
@@ -319,11 +345,14 @@
                     <TextBlock Grid.Column="1" Text="Contrast" Style="{StaticResource ControlLabelStyle}" />
                     <Slider Grid.Column="2"
                             Minimum="-100" Maximum="100"
-                            TickFrequency="1" IsSnapToTickEnabled="True"
+                            SmallChange="1" LargeChange="10"
                             Value="{Binding SelectedDisplay.Contrast, Mode=TwoWay}" />
-                    <TextBlock Grid.Column="3"
-                               Text="{Binding SelectedDisplay.Contrast}"
-                               Style="{StaticResource ControlValueStyle}" />
+                    <TextBox Grid.Column="3"
+                             Style="{StaticResource ControlValueBoxStyle}"
+                             Text="{Binding SelectedDisplay.Contrast, UpdateSourceTrigger=Explicit}"
+                             IsVisibleChanged="OnValueBoxVisibleChanged"
+                             KeyDown="OnValueBoxKeyDown"
+                             LostFocus="OnValueBoxLostFocus" />
                 </Grid>
 
                 <Grid Margin="0,0,0,10">
@@ -336,14 +365,20 @@
                     <TextBlock Grid.Column="0" Style="{StaticResource ControlIconStyle}" Text="&#xE7B3;" />
                     <TextBlock Grid.Column="1" Text="Gamma" Style="{StaticResource ControlLabelStyle}" />
                     <!-- Gamma is multiplicative, so the slider is logarithmic: position 0 is the neutral 1.0
-                         and the ends are 1/3 and 3.0. The value label below still shows gamma. -->
+                         and the ends are 1/3 and 3.0. The value box below still shows gamma itself, and it
+                         does not use the position converter because it edits the gamma, not the position.
+                         Snapping stays: at 0.01 of the position the steps are fine, and an unsnapped drag
+                         would land on arbitrary positions that make the display jitter. -->
                     <Slider Grid.Column="2"
                             Minimum="-1" Maximum="1"
-                            TickFrequency="0.05" IsSnapToTickEnabled="True"
+                            TickFrequency="0.01" IsSnapToTickEnabled="True"
                             Value="{Binding SelectedDisplay.Gamma, Mode=TwoWay, Converter={StaticResource GammaSliderPosition}}" />
-                    <TextBlock Grid.Column="3"
-                               Text="{Binding SelectedDisplay.Gamma, StringFormat={}{0:0.00}}"
-                               Style="{StaticResource ControlValueStyle}" />
+                    <TextBox Grid.Column="3"
+                             Style="{StaticResource ControlValueBoxStyle}"
+                             Text="{Binding SelectedDisplay.Gamma, UpdateSourceTrigger=Explicit, StringFormat={}{0:0.0}}"
+                             IsVisibleChanged="OnValueBoxVisibleChanged"
+                             KeyDown="OnValueBoxKeyDown"
+                             LostFocus="OnValueBoxLostFocus" />
                 </Grid>
 
                 <Grid Margin="0,0,0,10">
@@ -358,12 +393,15 @@
                     <Slider Grid.Column="2"
                             Minimum="{Binding SelectedDisplay.VibranceMinimum, FallbackValue=0}"
                             Maximum="{Binding SelectedDisplay.VibranceMaximum, FallbackValue=100}"
-                            TickFrequency="1" IsSnapToTickEnabled="True"
+                            SmallChange="1" LargeChange="10"
                             IsEnabled="{Binding IsVibranceEnabled}"
                             Value="{Binding SelectedDisplay.Vibrance, Mode=TwoWay}" />
-                    <TextBlock Grid.Column="3"
-                               Text="{Binding SelectedDisplay.Vibrance}"
-                               Style="{StaticResource ControlValueStyle}" />
+                    <TextBox Grid.Column="3"
+                             Style="{StaticResource ControlValueBoxStyle}"
+                             Text="{Binding SelectedDisplay.Vibrance, UpdateSourceTrigger=Explicit}"
+                             IsVisibleChanged="OnValueBoxVisibleChanged"
+                             KeyDown="OnValueBoxKeyDown"
+                             LostFocus="OnValueBoxLostFocus" />
                 </Grid>
 
                 <Grid Margin="0,0,0,14">
@@ -377,11 +415,14 @@
                     <TextBlock Grid.Column="1" Text="Hue" Style="{StaticResource ControlLabelStyle}" />
                     <Slider Grid.Column="2"
                             Minimum="-180" Maximum="180"
-                            TickFrequency="1" IsSnapToTickEnabled="True"
+                            SmallChange="1" LargeChange="10"
                             Value="{Binding SelectedDisplay.Hue, Mode=TwoWay}" />
-                    <TextBlock Grid.Column="3"
-                               Text="{Binding SelectedDisplay.Hue}"
-                               Style="{StaticResource ControlValueStyle}" />
+                    <TextBox Grid.Column="3"
+                             Style="{StaticResource ControlValueBoxStyle}"
+                             Text="{Binding SelectedDisplay.Hue, UpdateSourceTrigger=Explicit}"
+                             IsVisibleChanged="OnValueBoxVisibleChanged"
+                             KeyDown="OnValueBoxKeyDown"
+                             LostFocus="OnValueBoxLostFocus" />
                 </Grid>
 
                 <Separator Margin="0,0,0,12" />
@@ -460,6 +501,5 @@
                 </StackPanel>
             </StackPanel>
         </Grid>
-
     </Grid>
 </Window>
