@@ -29,5 +29,5 @@ v0.5 - Added information GPU-Monitor, cosmetic changes
 v0.6 - QoL changes
 
 <img width="1362" height="531" alt="image" src="https://github.com/user-attachments/assets/ad7b6c9d-dd1e-4bb8-aa32-ce8c218abc07" />
-<img width="2560" height="1368" alt="image" src="https://github.com/user-attachments/assets/2de20575-6759-4614-a6f6-94a517d1132a" />
-<img width="2560" height="1368" alt="image" src="https://github.com/user-attachments/assets/f144f3a8-e55b-4440-8da5-75c38625f02a" />
+<img width="1362" height="531" alt="image" src="https://github.com/user-attachments/assets/1fcd7fc6-0803-4b09-8cbd-05876a6e1158" />
+<img width="942" height="671" alt="image" src="https://github.com/user-attachments/assets/4385b407-681e-4fa6-8a4d-d123940d9207" />
