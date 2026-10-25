@@ -47,6 +47,8 @@
   "SystemInfo.NoAdapter": "Es wurde kein Grafikadapter gemeldet.",
   "SystemInfo.PrimaryTooltip": "Hauptanzeige",
   "SystemInfo.Version": "Version {0}",
+  "SystemInfo.Copy": "Kopieren",
+  "SystemInfo.Close": "Schließen",
 
   "Status.Ready": "Bereit.",
   "Status.Applied": "{0}: angewendet.",

@@ -47,6 +47,8 @@
   "SystemInfo.NoAdapter": "未报告任何显卡适配器。",
   "SystemInfo.PrimaryTooltip": "主显示器",
   "SystemInfo.Version": "版本 {0}",
+  "SystemInfo.Copy": "复制",
+  "SystemInfo.Close": "关闭",
 
   "Status.Ready": "就绪。",
   "Status.Applied": "{0}：已应用。",

@@ -47,6 +47,8 @@
   "SystemInfo.NoAdapter": "Видеоадаптер не обнаружен.",
   "SystemInfo.PrimaryTooltip": "Основной дисплей",
   "SystemInfo.Version": "Версия {0}",
+  "SystemInfo.Copy": "Копировать",
+  "SystemInfo.Close": "Закрыть",
 
   "Status.Ready": "Готово.",
   "Status.Applied": "{0}: применено.",

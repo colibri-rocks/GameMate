@@ -47,6 +47,8 @@
   "SystemInfo.NoAdapter": "No video adapter was reported.",
   "SystemInfo.PrimaryTooltip": "Primary display",
   "SystemInfo.Version": "Version {0}",
+  "SystemInfo.Copy": "Copy",
+  "SystemInfo.Close": "Close",
 
   "Status.Ready": "Ready.",
   "Status.Applied": "{0}: applied.",
