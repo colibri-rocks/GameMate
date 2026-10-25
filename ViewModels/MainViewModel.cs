@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Globalization;
 using GameMate.Infrastructure;
+using GameMate.Localization;
 using GameMate.Models;
 using GameMate.Services;
 
@@ -19,9 +20,13 @@ namespace GameMate.ViewModels;
 public sealed class MainViewModel : ObservableObject, IDisposable
 {
     /// <summary>
-    /// Status text shown when nothing needs reporting.
+    /// Gets the status text shown when nothing needs reporting, in the selected language.
     /// </summary>
-    private const string ReadyStatus = "Ready.";
+    /// <remarks>
+    /// A property rather than a constant because the text is localized. It is resolved on every read, so a
+    /// language switch is reflected the next time the idle state is compared or assigned.
+    /// </remarks>
+    private static string ReadyStatus => LanguageService.Current["Status.Ready"];
 
     private readonly IDisplayService _displayService;
     private readonly IGammaRampDevice _gammaRampDevice;
@@ -63,8 +68,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         ApplyProfileCommand = new RelayCommand(ApplyProfile, _ => SelectedDisplay is not null);
         ResetToDefaultsCommand = new RelayCommand(ResetToDefaults, () => SelectedDisplay is not null);
-        CycleThemeCommand = new RelayCommand(CycleTheme);
+        ShowSettingsCommand = new RelayCommand(() => SettingsRequested?.Invoke(this, EventArgs.Empty));
         ShowSystemInfoCommand = new RelayCommand(() => SystemInfoRequested?.Invoke(this, EventArgs.Empty));
+
+        // Computed strings such as NvidiaSummary are built from the language service rather than bound to its
+        // indexer, so they have to be re-raised when the language changes.
+        LanguageService.Current.PropertyChanged += OnLanguageChanged;
     }
 
     /// <summary>
@@ -86,9 +95,18 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public RelayCommand ResetToDefaultsCommand { get; }
 
     /// <summary>
-    /// Gets the command that advances the theme through Follow Windows, Light and Dark.
+    /// Gets the command that asks for the settings window.
     /// </summary>
-    public RelayCommand CycleThemeCommand { get; }
+    /// <remarks>
+    /// The command only raises <see cref="SettingsRequested"/>: creating a window is a view concern, so it is
+    /// left to the composition root, which is the only place that knows how to build one.
+    /// </remarks>
+    public RelayCommand ShowSettingsCommand { get; }
+
+    /// <summary>
+    /// Occurs when the user asks for the settings window, which the composition root opens.
+    /// </summary>
+    public event EventHandler? SettingsRequested;
 
     /// <summary>
     /// Gets the command that asks for the system information window.
@@ -120,19 +138,52 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public string ProfileTwoName => GetSlotName(1);
 
     /// <summary>
+    /// Gets the name of the third profile slot, or an empty string when the hotkey only covers two slots.
+    /// </summary>
+    /// <remarks>
+    /// Empty rather than hidden so the footer hint can keep one fixed sequence of runs; a run with no text
+    /// occupies no width and leaves the two-profile sentence byte-identical to before this setting existed.
+    /// </remarks>
+    public string ProfileThreeName =>
+        CurrentHotkeyProfileCount == HotkeyProfileCount.Three ? GetSlotName(2) : string.Empty;
+
+    /// <summary>
+    /// Gets the separator between the first and second profile names in the footer hint.
+    /// </summary>
+    /// <remarks>
+    /// A comma when three names are listed, and the localized "and" when only two are, so the two-profile
+    /// sentence keeps its original wording.
+    /// </remarks>
+    public string HotkeyHintSeparator => CurrentHotkeyProfileCount == HotkeyProfileCount.Three
+        ? LanguageService.Current["Main.HotkeyHint.Comma"]
+        : LanguageService.Current["Main.HotkeyHint.And"];
+
+    /// <summary>
+    /// Gets the joining word before the third profile name, or an empty string in two-profile mode.
+    /// </summary>
+    public string HotkeyHintThirdJoin => CurrentHotkeyProfileCount == HotkeyProfileCount.Three
+        ? LanguageService.Current["Main.HotkeyHint.And"]
+        : string.Empty;
+
+    /// <summary>
     /// Returns the current name of a profile slot for the hotkey hint.
     /// </summary>
     /// <param name="index">Zero-based slot index.</param>
     /// <returns>The slot name, or its default one-based name before the slots were created.</returns>
     private string GetSlotName(int index)
     {
-        return index < ProfileSlots.Count && ProfileSlots[index].Name is { Length: > 0 } name
-            ? name
-            : $"Profile {index + 1}";
+        // DisplayName is used rather than Name so an untouched slot appears in the selected language in the
+        // hint, without the stored name being rewritten.
+        if (index < ProfileSlots.Count && ProfileSlots[index].DisplayName is { Length: > 0 } displayed)
+        {
+            return displayed;
+        }
+
+        return LanguageService.Current.Format("Profile.DefaultName", index + 1);
     }
 
     /// <summary>
-    /// Toggles between profile slot 1 and slot 2, applying the newly selected slot.
+    /// Advances the global hotkey through the profile slots selected by <see cref="CurrentHotkeyProfileCount"/>.
     /// </summary>
     /// <remarks>
     /// Kept separate from <see cref="ApplyProfileCommand"/> because that command requires a selected
@@ -142,11 +193,78 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     /// </remarks>
     public void ToggleProfileOneAndTwo()
     {
-        // ActiveProfileIndex already records which slot was applied last, so it doubles as the toggle
+        // ActiveProfileIndex already records which slot was applied last, so it doubles as the cycle
         // memory and no extra field has to be added or persisted.
-        int target = _profiles.ActiveProfileIndex == 0 ? 1 : 0;
+        int slotCount = CurrentHotkeyProfileCount == HotkeyProfileCount.Three ? ColorProfile.SlotCount : 2;
 
-        ApplyProfile((target + 1).ToString(CultureInfo.InvariantCulture));
+        // Clamping first keeps the cycle deterministic if the persisted index sits outside the active range;
+        // without it a stale index of 2 in two-profile mode would wrap to the wrong slot.
+        int current = Math.Clamp(_profiles.ActiveProfileIndex, 0, slotCount - 1);
+        int next = (current + 1) % slotCount;
+
+        ApplyProfile((next + 1).ToString(CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>
+    /// Gets or sets how many profile slots the global hotkey steps through.
+    /// </summary>
+    /// <remarks>
+    /// Persisted with the profile file so the choice survives a restart, and read on every hotkey press, so no
+    /// extra state has to be kept in step.
+    /// </remarks>
+    public HotkeyProfileCount CurrentHotkeyProfileCount
+    {
+        get => _profiles.HotkeyProfileCount;
+        set
+        {
+            if (_profiles.HotkeyProfileCount == value)
+            {
+                return;
+            }
+
+            _profiles.HotkeyProfileCount = value;
+
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsHotkeyScopeTwo));
+            OnPropertyChanged(nameof(IsHotkeyScopeThree));
+            OnPropertyChanged(nameof(ProfileThreeName));
+            OnPropertyChanged(nameof(HotkeyHintSeparator));
+            OnPropertyChanged(nameof(HotkeyHintThirdJoin));
+
+            ScheduleProfileSave();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the hotkey toggles between profile slots 1 and 2.
+    /// </summary>
+    public bool IsHotkeyScopeTwo
+    {
+        get => CurrentHotkeyProfileCount == HotkeyProfileCount.Two;
+        set => SelectHotkeyProfileCount(value, HotkeyProfileCount.Two);
+    }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the hotkey cycles all three profile slots.
+    /// </summary>
+    public bool IsHotkeyScopeThree
+    {
+        get => CurrentHotkeyProfileCount == HotkeyProfileCount.Three;
+        set => SelectHotkeyProfileCount(value, HotkeyProfileCount.Three);
+    }
+
+    /// <summary>
+    /// Applies a hotkey scope when its toggle reports that it became the selected one.
+    /// </summary>
+    /// <param name="selected">Value reported by the toggle.</param>
+    /// <param name="scope">Scope the toggle stands for.</param>
+    private void SelectHotkeyProfileCount(bool selected, HotkeyProfileCount scope)
+    {
+        // Only the toggle that became checked applies, so unchecking the previous one does not clear it again.
+        if (selected)
+        {
+            CurrentHotkeyProfileCount = scope;
+        }
     }
 
     /// <summary>
@@ -160,28 +278,172 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         // Called from the composition root before the window is shown, so it deliberately goes through
         // the same status property the rest of the window uses.
-        StatusMessage = reason ?? "The profile toggle hotkey (Ctrl+Alt+Shift+P) is unavailable.";
+        StatusMessage = reason ?? LanguageService.Current["Status.HotkeyUnavailable"];
     }
 
     /// <summary>
-    /// Gets the Segoe MDL2 Assets glyph for the theme the user selected.
+    /// Gets or sets the theme the window is drawn in.
     /// </summary>
     /// <remarks>
-    /// The glyph shows the selected mode rather than the palette that is currently resolved, so choosing
-    /// Follow Windows keeps showing the gear icon even while Windows itself is dark.
+    /// Setting this applies the palette immediately and writes the profile file, which is what the settings
+    /// window drives. The theme is an appearance preference rather than a colour edit, so nothing here touches
+    /// the gamma ramp or Digital Vibrance.
     /// </remarks>
-    public string ThemeGlyph => _profiles.Theme switch
+    public AppTheme CurrentTheme
     {
-        AppTheme.Light => "\uE706",
-        AppTheme.Dark => "\uE708",
-        _ => "\uE713",
-    };
+        get => _profiles.Theme;
+        set
+        {
+            if (_profiles.Theme == value)
+            {
+                return;
+            }
+
+            _profiles.Theme = value;
+
+            _themeManager.Apply(value);
+
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsThemeSystem));
+            OnPropertyChanged(nameof(IsThemeLight));
+            OnPropertyChanged(nameof(IsThemeDark));
+
+            ScheduleProfileSave();
+        }
+    }
 
     /// <summary>
-    /// Gets the tooltip for the theme button, naming the selected theme and the one a click moves to.
+    /// Gets or sets a value indicating whether the theme follows the Windows setting.
     /// </summary>
-    public string ThemeTooltip =>
-        $"Theme: {DescribeTheme(_profiles.Theme)}. Click to switch to {DescribeTheme(NextTheme(_profiles.Theme))}.";
+    public bool IsThemeSystem
+    {
+        get => CurrentTheme == AppTheme.System;
+        set => SelectTheme(value, AppTheme.System);
+    }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the light palette is selected.
+    /// </summary>
+    public bool IsThemeLight
+    {
+        get => CurrentTheme == AppTheme.Light;
+        set => SelectTheme(value, AppTheme.Light);
+    }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the dark palette is selected.
+    /// </summary>
+    public bool IsThemeDark
+    {
+        get => CurrentTheme == AppTheme.Dark;
+        set => SelectTheme(value, AppTheme.Dark);
+    }
+
+    /// <summary>
+    /// Gets or sets the interface language.
+    /// </summary>
+    /// <remarks>
+    /// Stored and remembered, but deliberately not applied: no translation exists yet, so the interface stays
+    /// English whatever is selected.
+    /// </remarks>
+    public AppLanguage CurrentLanguage
+    {
+        get => _profiles.Language;
+        set
+        {
+            if (_profiles.Language == value)
+            {
+                return;
+            }
+
+            _profiles.Language = value;
+
+            // Captured before the switch, while the idle comparison still uses the old language's text.
+            bool wasIdle = !ShowsStatusMessage;
+
+            // Switching here is what repaints every open window: the service raises PropertyChanged on its
+            // indexer, so every {loc:Loc} binding re-reads its text.
+            LanguageService.Current.SetLanguage(value);
+
+            if (wasIdle)
+            {
+                // Re-render the idle text so the status line does not keep the previous language's wording.
+                StatusMessage = ReadyStatus;
+            }
+
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsLanguageEnglish));
+            OnPropertyChanged(nameof(IsLanguageRussian));
+            OnPropertyChanged(nameof(IsLanguageGerman));
+            OnPropertyChanged(nameof(IsLanguageChineseSimplified));
+
+            ScheduleProfileSave();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether English is the selected language.
+    /// </summary>
+    public bool IsLanguageEnglish
+    {
+        get => CurrentLanguage == AppLanguage.English;
+        set => SelectLanguage(value, AppLanguage.English);
+    }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether Russian is the selected language.
+    /// </summary>
+    public bool IsLanguageRussian
+    {
+        get => CurrentLanguage == AppLanguage.Russian;
+        set => SelectLanguage(value, AppLanguage.Russian);
+    }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether German is the selected language.
+    /// </summary>
+    public bool IsLanguageGerman
+    {
+        get => CurrentLanguage == AppLanguage.German;
+        set => SelectLanguage(value, AppLanguage.German);
+    }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether Simplified Chinese is the selected language.
+    /// </summary>
+    public bool IsLanguageChineseSimplified
+    {
+        get => CurrentLanguage == AppLanguage.ChineseSimplified;
+        set => SelectLanguage(value, AppLanguage.ChineseSimplified);
+    }
+
+    /// <summary>
+    /// Applies a theme when its toggle reports that it became the selected one.
+    /// </summary>
+    /// <param name="selected">Value reported by the toggle.</param>
+    /// <param name="theme">Theme the toggle stands for.</param>
+    private void SelectTheme(bool selected, AppTheme theme)
+    {
+        // Only the toggle that became checked applies, so unchecking the previous one does not clear the
+        // selection a second time.
+        if (selected)
+        {
+            CurrentTheme = theme;
+        }
+    }
+
+    /// <summary>
+    /// Records a language when its toggle reports that it became the selected one.
+    /// </summary>
+    /// <param name="selected">Value reported by the toggle.</param>
+    /// <param name="language">Language the toggle stands for.</param>
+    private void SelectLanguage(bool selected, AppLanguage language)
+    {
+        if (selected)
+        {
+            CurrentLanguage = language;
+        }
+    }
 
     /// <summary>
     /// Gets or sets the display being edited. Only one display is edited at a time, matching the
@@ -248,7 +510,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     /// <summary>
     /// Gets the name of the profile that is currently in use.
     /// </summary>
-    public string ActiveProfileSummary => $"Active profile: {ActiveProfile.Name}";
+    public string ActiveProfileSummary => LanguageService.Current.Format("Status.ActiveProfile", ActiveProfile.Name);
 
     /// <summary>
     /// Gets a summary of the NVIDIA driver state, used to explain why the NVIDIA specific controls may
@@ -262,12 +524,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             if (!availability.IsAvailable)
             {
-                return availability.Reason ?? "The NVIDIA specific controls are unavailable.";
+                return availability.Reason ?? LanguageService.Current["Nvidia.Summary.Unavailable"];
             }
 
             return availability.DriverVersion is { Length: > 0 } version
-                ? $"NVIDIA driver detected (version {version}). Digital Vibrance and hue are controlled through NVAPI."
-                : "NVIDIA driver detected. Digital Vibrance and hue are controlled through NVAPI.";
+                ? LanguageService.Current.Format("Nvidia.Summary.WithVersion", version)
+                : LanguageService.Current["Nvidia.Summary.WithoutVersion"];
         }
     }
 
@@ -319,6 +581,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _isInitialized = true;
 
         _profiles = _profileStore.Load();
+
+        // Keep the service in step with the file that was actually loaded, which matters whenever the profile
+        // is reloaded rather than read once during startup.
+        LanguageService.Current.SetLanguage(_profiles.Language);
 
         // App.xaml.cs already applied the stored theme before this window existed. Re-applying it here
         // keeps this view model the single owner of the theme even though the file is read twice.
@@ -392,6 +658,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             slot.PropertyChanged -= OnProfileSlotPropertyChanged;
         }
+
+        // The language service is process-wide and outlives this view model, so the subscription has to be
+        // released explicitly.
+        LanguageService.Current.PropertyChanged -= OnLanguageChanged;
 
         _applyDebouncer.Dispose();
         _saveDebouncer.Dispose();
@@ -552,7 +822,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         // failure is worth reporting.
         if (appliedCount == 0)
         {
-            StatusMessage = $"{profile.Name} could not be applied because no display is available.";
+            StatusMessage = LanguageService.Current.Format("Status.ProfileCouldNotApply", profile.Name);
         }
     }
 
@@ -592,7 +862,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         ApplySettings(monitor, monitor.Settings);
 
         ScheduleProfileSave();
-        StatusMessage = $"{monitor.DisplayLabel}: reset to defaults.";
+        StatusMessage = LanguageService.Current.Format("Status.ResetToDefaults", monitor.DisplayLabel);
     }
 
     /// <summary>
@@ -657,7 +927,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         StatusMessage = failures.Count == 0
-            ? $"{monitor.DisplayLabel}: applied."
+            ? LanguageService.Current.Format("Status.Applied", monitor.DisplayLabel)
             : string.Join(" ", failures);
     }
 
@@ -815,53 +1085,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Advances the theme through Follow Windows, Light and Dark, applies it and persists the choice.
-    /// </summary>
-    private void CycleTheme()
-    {
-        _profiles.Theme = NextTheme(_profiles.Theme);
-
-        _themeManager.Apply(_profiles.Theme);
-
-        OnPropertyChanged(nameof(ThemeGlyph));
-        OnPropertyChanged(nameof(ThemeTooltip));
-
-        // The theme is an appearance preference, not a colour edit, so it only writes the profile file.
-        // Nothing here touches the gamma ramp or Digital Vibrance.
-        ScheduleProfileSave();
-    }
-
-    /// <summary>
-    /// Returns the theme a click moves to, in the fixed order Follow Windows, Light, Dark.
-    /// </summary>
-    /// <param name="theme">Theme currently selected.</param>
-    /// <returns>The next theme in the cycle.</returns>
-    private static AppTheme NextTheme(AppTheme theme)
-    {
-        return theme switch
-        {
-            AppTheme.System => AppTheme.Light,
-            AppTheme.Light => AppTheme.Dark,
-            _ => AppTheme.System,
-        };
-    }
-
-    /// <summary>
-    /// Produces the name of a theme for the tooltip.
-    /// </summary>
-    /// <param name="theme">Theme to describe.</param>
-    /// <returns>A human readable theme name.</returns>
-    private static string DescribeTheme(AppTheme theme)
-    {
-        return theme switch
-        {
-            AppTheme.Light => "Light",
-            AppTheme.Dark => "Dark",
-            _ => "Follow Windows",
-        };
-    }
-
-    /// <summary>
     /// Sets the status text reported during startup.
     /// </summary>
     private void UpdateInitialStatus()
@@ -870,13 +1093,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         if (!availability.IsAvailable)
         {
-            StatusMessage = availability.Reason ?? "The NVIDIA specific controls are unavailable.";
+            StatusMessage = availability.Reason ?? LanguageService.Current["Nvidia.Summary.Unavailable"];
             return;
         }
 
         if (Displays.Count == 0)
         {
-            StatusMessage = "No active display was found, so there is nothing to configure.";
+            StatusMessage = LanguageService.Current["Status.NoDisplay"];
             return;
         }
 
@@ -884,6 +1107,36 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         StatusMessage = unreadable is null
             ? ReadyStatus
-            : $"The driver did not report a gamma ramp for \"{unreadable.FriendlyName}\"; changes to it may not take effect.";
+            : LanguageService.Current.Format("Status.DriverNoRamp", unreadable.FriendlyName);
+    }
+
+    /// <summary>
+    /// Re-raises the computed strings when the interface language changes.
+    /// </summary>
+    /// <param name="sender">Language service that raised the change.</param>
+    /// <param name="e">Description of the change.</param>
+    /// <remarks>
+    /// These properties build their text from the language service instead of being bound to its indexer, so
+    /// without this they would keep the previous language until something else happened to refresh them.
+    /// </remarks>
+    private void OnLanguageChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(StatusMessage));
+        OnPropertyChanged(nameof(NvidiaSummary));
+        OnPropertyChanged(nameof(ActiveProfileSummary));
+        OnPropertyChanged(nameof(ProfileOneName));
+        OnPropertyChanged(nameof(ProfileTwoName));
+
+        // An untouched slot renders its automatic name in the selected language, so each button re-reads it.
+        foreach (ProfileSlotViewModel slot in ProfileSlots)
+        {
+            slot.NotifyLanguageChanged();
+        }
+
+        // The selector shows a localized label, so each display re-reads it as well.
+        foreach (MonitorViewModel monitor in Displays)
+        {
+            monitor.NotifyLanguageChanged();
+        }
     }
 }

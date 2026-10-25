@@ -100,8 +100,10 @@ public sealed class ProfileStore : IProfileStore
         }
         catch (Exception exception) when (IsRecoverable(exception))
         {
-            failureReason = $"The profiles could not be saved to {FilePath} "
-                          + $"({exception.GetType().Name}: {exception.Message}).";
+            failureReason = GameMate.Localization.LanguageService.Current.Format(
+                "Error.ProfilesNotSaved",
+                FilePath,
+                $"{exception.GetType().Name}: {exception.Message}");
 
             return false;
         }

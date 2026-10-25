@@ -68,6 +68,7 @@ public partial class MainWindow : Window
         // Creating a window is a view concern, so the view model only asks for it and this window builds
         // it, which keeps the view model free of any dependency on WPF windows.
         _viewModel.SystemInfoRequested += OnSystemInfoRequested;
+        _viewModel.SettingsRequested += OnSettingsRequested;
 
         // The hotkey has to work while GameMate is unfocused, so it is registered globally rather than
         // as a key binding.
@@ -107,6 +108,7 @@ public partial class MainWindow : Window
         // The theme manager outlives this window, so the subscription has to be released explicitly.
         _themeManager.ThemeChanged -= OnThemeChanged;
         _viewModel.SystemInfoRequested -= OnSystemInfoRequested;
+        _viewModel.SettingsRequested -= OnSettingsRequested;
 
         // Releasing the chord here matters: an unregistered global hotkey stays owned by the process
         // until it exits, so a relaunch would fail to register it again.
@@ -153,6 +155,24 @@ public partial class MainWindow : Window
     /// <param name="e">Event data.</param>
     private void OnThemeChanged(object? sender, EventArgs e)
     {
+        _themeManager.ApplyNativeWindowTheme(this);
+    }
+
+    /// <summary>
+    /// Opens the settings window on behalf of the view model.
+    /// </summary>
+    /// <param name="sender">View model that raised the request.</param>
+    /// <param name="e">Event data.</param>
+    private void OnSettingsRequested(object? sender, EventArgs e)
+    {
+        SettingsWindow window = new(_viewModel, _themeManager) { Owner = this };
+
+        // Modal like the information window: the settings drive this window's palette, so the two must not be
+        // edited at the same time. Changes still preview live because this window stays rendered behind.
+        window.ShowDialog();
+
+        // ApplyNativeWindowTheme remembers a single window, which the dialog handed back on close, but the
+        // call is repeated here so ownership is unambiguous even if the dialog failed to close cleanly.
         _themeManager.ApplyNativeWindowTheme(this);
     }
 

@@ -4,8 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:infra="clr-namespace:GameMate.Infrastructure"
+        xmlns:loc="clr-namespace:GameMate.Localization"
         mc:Ignorable="d"
-        Title="GameMate - System information"
+        Title="{loc:Loc SystemInfo.Title}"
         Width="640"
         MinHeight="240"
         MaxHeight="620"
@@ -51,7 +52,7 @@
                           VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <StackPanel Margin="0,0,0,10">
-                    <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="GameMate" />
+                    <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="{loc:Loc SystemInfo.Section.GameMate}" />
                     <TextBlock Text="{Binding SoftwareVersionLabel}" TextWrapping="Wrap" />
                 </StackPanel>
 
@@ -63,7 +64,7 @@
                            Visibility="{Binding HasWarning, Converter={StaticResource BooleanToVisibility}}" />
 
                 <StackPanel Margin="0,0,0,10">
-                    <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Windows" />
+                    <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="{loc:Loc SystemInfo.Section.Windows}" />
                     <TextBlock Text="{Binding WindowsEdition}" TextWrapping="Wrap" />
                     <TextBlock Margin="0,2,0,0"
                                Style="{StaticResource FieldLabelStyle}"
@@ -72,7 +73,7 @@
                 </StackPanel>
 
                 <StackPanel>
-                    <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Graphics" />
+                    <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="{loc:Loc SystemInfo.Section.Graphics}" />
 
                     <ItemsControl ItemsSource="{Binding GraphicsEntries}">
                         <ItemsControl.ItemTemplate>
@@ -103,7 +104,7 @@
                                                                VerticalAlignment="Center"
                                                                Foreground="{DynamicResource AccentBrush}"
                                                                Text="&#xE735;"
-                                                               ToolTip="Primary display"
+                                                               ToolTip="{loc:Loc SystemInfo.PrimaryTooltip}"
                                                                Visibility="{Binding IsPrimary, Converter={StaticResource BooleanToVisibility}}" />
 
                                                     <StackPanel Grid.Column="1">
@@ -120,7 +121,7 @@
                                     <!-- Shown only when the adapter drives no output. -->
                                     <TextBlock Margin="12,6,0,0"
                                                Style="{StaticResource FieldLabelStyle}"
-                                               Text="No monitors connected"
+                                               Text="{loc:Loc SystemInfo.NoMonitors}"
                                                Visibility="{Binding HasMonitors, Converter={StaticResource InverseBooleanToVisibility}}" />
                                 </StackPanel>
                             </DataTemplate>
@@ -128,14 +129,14 @@
                     </ItemsControl>
 
                     <TextBlock Style="{StaticResource FieldLabelStyle}"
-                               Text="No video adapter was reported."
+                               Text="{loc:Loc SystemInfo.NoAdapter}"
                                Visibility="{Binding HasVideoControllers, Converter={StaticResource InverseBooleanToVisibility}}" />
                 </StackPanel>
 
                 <!-- Only shown when the correlation failed for some monitor, so nothing disappears silently. -->
                 <StackPanel Margin="0,10,0,0"
                             Visibility="{Binding HasUnmatchedMonitors, Converter={StaticResource BooleanToVisibility}}">
-                    <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Unmatched monitors" />
+                    <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="{loc:Loc SystemInfo.Section.Unmatched}" />
 
                     <ItemsControl ItemsSource="{Binding UnmatchedMonitors}">
                         <ItemsControl.ItemTemplate>
@@ -164,7 +165,7 @@
                 CornerRadius="6"
                 Padding="10">
             <StackPanel>
-            <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Feature matrix" />
+            <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="{loc:Loc SystemInfo.Section.FeatureMatrix}" />
 
             <!-- Features grouped by the API that provides them, so the matrix shows why a control is available. -->
             <ItemsControl ItemsSource="{Binding FeatureGroups}">

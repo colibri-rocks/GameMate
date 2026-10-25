@@ -4,8 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:infra="clr-namespace:GameMate.Infrastructure"
+        xmlns:loc="clr-namespace:GameMate.Localization"
         mc:Ignorable="d"
-        Title="GameMate - Display control"
+        Title="{loc:Loc Main.Title}"
         Width="920"
         MinWidth="800"
         MinHeight="360"
@@ -153,6 +154,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0" Margin="0,0,0,14">
@@ -164,7 +166,7 @@
             <TextBlock Grid.Column="0"
                        FontSize="20"
                        FontWeight="SemiBold"
-                       Text="Display control" />
+                       Text="{loc:Loc Main.Heading}" />
 
             <StackPanel Grid.Column="1"
                         Orientation="Horizontal"
@@ -174,8 +176,8 @@
                      window itself is created by the composition root, which owns window creation. -->
                 <Button Padding="8,4"
                         Command="{Binding ShowSystemInfoCommand}"
-                        ToolTip="System information"
-                        AutomationProperties.Name="System information"
+                        ToolTip="{loc:Loc Main.Toolbar.SystemInfo}"
+                        AutomationProperties.Name="{loc:Loc Main.Toolbar.SystemInfo}"
                         Background="{DynamicResource ControlBackgroundBrush}"
                         BorderBrush="{DynamicResource ControlBorderBrush}">
                     <TextBlock FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons, Segoe UI Symbol"
@@ -184,19 +186,18 @@
                                Text="&#xE946;" />
                 </Button>
 
-                <!-- Cycles Follow Windows -> Light -> Dark. The tooltip names both the current mode and the
-                     next one, which is what keeps a three-state icon button unambiguous. -->
+                <!-- Opens the settings window, which now owns the theme choice. -->
                 <Button Margin="8,0,0,0"
                         Padding="8,4"
-                        Command="{Binding CycleThemeCommand}"
-                        ToolTip="{Binding ThemeTooltip}"
-                        AutomationProperties.Name="{Binding ThemeTooltip}"
+                        Command="{Binding ShowSettingsCommand}"
+                        ToolTip="{loc:Loc Main.Toolbar.Settings}"
+                        AutomationProperties.Name="{loc:Loc Main.Toolbar.Settings}"
                         Background="{DynamicResource ControlBackgroundBrush}"
                         BorderBrush="{DynamicResource ControlBorderBrush}">
                     <TextBlock FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons, Segoe UI Symbol"
                                FontSize="16"
                                Foreground="{DynamicResource ForegroundBrush}"
-                               Text="{Binding ThemeGlyph}" />
+                               Text="&#xE713;" />
                 </Button>
             </StackPanel>
         </Grid>
@@ -212,7 +213,7 @@
             <DockPanel Grid.Column="0">
                 <TextBlock DockPanel.Dock="Top"
                            Margin="0,0,0,6"
-                           Text="Select a display to change:" />
+                           Text="{loc:Loc Main.SelectDisplay}" />
 
                 <!-- Status sits under the list so it lines up with the profile buttons in the right
                      column. Moving it here removes the separate bottom row and shortens the window. -->
@@ -222,17 +223,6 @@
                                TextWrapping="Wrap"
                                Visibility="{Binding ShowsStatusMessage, Converter={StaticResource BooleanToVisibility}}" />
 
-                    <!-- Documents the global profile toggle hotkey: it is the only shortcut the app
-                         registers, and there is no other place in the UI that reveals it. -->
-                    <TextBlock Margin="0,4,0,0"
-                               FontSize="11"
-                               Foreground="{DynamicResource ForegroundMutedBrush}"
-                               TextWrapping="Wrap">
-                        <!-- Bold only the things the user acts on directly; the rest stays muted.
-                             Mode=OneWay is required: Run.Text binds TwoWay by default, which a read-only
-                             computed property cannot satisfy. -->
-                        <Run FontWeight="Bold" Text="{Binding HotkeyCombination, Mode=OneWay}" /><Run Text=" to toggle between profiles: " /><Run FontWeight="Bold" Text="{Binding ProfileOneName, Mode=OneWay}" /><Run Text=" and " /><Run FontWeight="Bold" Text="{Binding ProfileTwoName, Mode=OneWay}" /><Run Text=". Double-click a profile button to rename it." />
-                    </TextBlock>
                 </StackPanel>
 
                 <!-- MaxHeight caps the list at 4 rows; VerticalAlignment Top lets it stay compact while
@@ -292,7 +282,7 @@
                                                        VerticalAlignment="Center"
                                                        Foreground="{DynamicResource AccentBrush}"
                                                        Text="&#xE735;"
-                                                       ToolTip="Primary display"
+                                                       ToolTip="{loc:Loc Main.PrimaryTooltip}"
                                                        Visibility="{Binding IsPrimary, Converter={StaticResource BooleanToVisibility}}" />
                                         </Border>
 
@@ -319,7 +309,7 @@
                         <ColumnDefinition Width="52" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Style="{StaticResource ControlIconStyle}" Text="&#xE706;" />
-                    <TextBlock Grid.Column="1" Text="Brightness" Style="{StaticResource ControlLabelStyle}" />
+                    <TextBlock Grid.Column="1" Text="{loc:Loc Main.Slider.Brightness}" Style="{StaticResource ControlLabelStyle}" />
                     <!-- Continuous drag: a step of 1 is the finest the integer model allows, so snapping to
                          tick marks only made the thumb jump. SmallChange keeps the arrow keys at one unit. -->
                     <Slider Grid.Column="2"
@@ -342,7 +332,7 @@
                         <ColumnDefinition Width="52" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Style="{StaticResource ControlIconStyle}" Text="&#xE793;" />
-                    <TextBlock Grid.Column="1" Text="Contrast" Style="{StaticResource ControlLabelStyle}" />
+                    <TextBlock Grid.Column="1" Text="{loc:Loc Main.Slider.Contrast}" Style="{StaticResource ControlLabelStyle}" />
                     <Slider Grid.Column="2"
                             Minimum="-100" Maximum="100"
                             SmallChange="1" LargeChange="10"
@@ -363,7 +353,7 @@
                         <ColumnDefinition Width="52" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Style="{StaticResource ControlIconStyle}" Text="&#xE7B3;" />
-                    <TextBlock Grid.Column="1" Text="Gamma" Style="{StaticResource ControlLabelStyle}" />
+                    <TextBlock Grid.Column="1" Text="{loc:Loc Main.Slider.Gamma}" Style="{StaticResource ControlLabelStyle}" />
                     <!-- Gamma is multiplicative, so the slider is logarithmic: position 0 is the neutral 1.0
                          and the ends are 1/3 and 3.0. The value box below still shows gamma itself, and it
                          does not use the position converter because it edits the gamma, not the position.
@@ -389,7 +379,7 @@
                         <ColumnDefinition Width="52" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Style="{StaticResource ControlIconStyle}" Text="&#xE790;" />
-                    <TextBlock Grid.Column="1" Text="Digital Vibrance" Style="{StaticResource ControlLabelStyle}" />
+                    <TextBlock Grid.Column="1" Text="{loc:Loc Main.Slider.Vibrance}" Style="{StaticResource ControlLabelStyle}" />
                     <Slider Grid.Column="2"
                             Minimum="{Binding SelectedDisplay.VibranceMinimum, FallbackValue=0}"
                             Maximum="{Binding SelectedDisplay.VibranceMaximum, FallbackValue=100}"
@@ -412,7 +402,7 @@
                         <ColumnDefinition Width="52" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Style="{StaticResource ControlIconStyle}" Text="&#xE2B1;" />
-                    <TextBlock Grid.Column="1" Text="Hue" Style="{StaticResource ControlLabelStyle}" />
+                    <TextBlock Grid.Column="1" Text="{loc:Loc Main.Slider.Hue}" Style="{StaticResource ControlLabelStyle}" />
                     <Slider Grid.Column="2"
                             Minimum="-180" Maximum="180"
                             SmallChange="1" LargeChange="10"
@@ -427,7 +417,7 @@
 
                 <Separator Margin="0,0,0,12" />
 
-                <TextBlock Margin="0,0,0,8" FontWeight="SemiBold" Text="Profiles" />
+                <TextBlock Margin="0,0,0,8" FontWeight="SemiBold" Text="{loc:Loc Main.Profiles}" />
 
                 <StackPanel Orientation="Horizontal">
                     <!-- One button per slot: double click renames it in place, single click applies it. -->
@@ -441,7 +431,7 @@
                             <DataTemplate>
                                 <Grid Margin="0,0,8,0">
                                     <Button Width="96" Height="30"
-                                            Content="{Binding Name}"
+                                            Content="{Binding DisplayName}"
                                             Command="{Binding DataContext.ApplyProfileCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                             CommandParameter="{Binding Number}"
                                             Visibility="{Binding IsEditingName, Converter={StaticResource InverseBooleanToVisibility}}">
@@ -488,7 +478,7 @@
                     </ItemsControl>
 
                     <Button Width="140" Height="30" Margin="8,0,0,0"
-                            Content="Reset to defaults"
+                            Content="{loc:Loc Main.ResetDefaults}"
                             Command="{Binding ResetToDefaultsCommand}">
                         <Button.Style>
                             <Style TargetType="Button">
@@ -501,5 +491,17 @@
                 </StackPanel>
             </StackPanel>
         </Grid>
+
+        <!-- Full width so the sentence never has to wrap, and below the body so it reads as a footer. -->
+        <TextBlock Grid.Row="2"
+                   Margin="0,10,0,0"
+                   FontSize="11"
+                   Foreground="{DynamicResource ForegroundMutedBrush}"
+                   TextWrapping="NoWrap">
+            <!-- Bold only the things the user acts on directly; the rest stays muted.
+                 Mode=OneWay is required: Run.Text binds TwoWay by default, which a read-only
+                 computed property cannot satisfy. -->
+            <Run FontWeight="Bold" Text="{Binding HotkeyCombination, Mode=OneWay}" /><Run Text="{loc:Loc Main.HotkeyHint.Middle}" /><Run FontWeight="Bold" Text="{Binding ProfileOneName, Mode=OneWay}" /><Run Text="{Binding HotkeyHintSeparator, Mode=OneWay}" /><Run FontWeight="Bold" Text="{Binding ProfileTwoName, Mode=OneWay}" /><Run Text="{Binding HotkeyHintThirdJoin, Mode=OneWay}" /><Run FontWeight="Bold" Text="{Binding ProfileThreeName, Mode=OneWay}" /><Run Text="{loc:Loc Main.HotkeyHint.Rename}" />
+        </TextBlock>
     </Grid>
 </Window>

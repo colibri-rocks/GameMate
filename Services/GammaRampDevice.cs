@@ -71,7 +71,7 @@ public sealed class GammaRampDevice : IGammaRampDevice
 
         if (ramp.Length != GammaRampBuilder.RampLength)
         {
-            failureReason = $"A gamma ramp must hold {GammaRampBuilder.RampLength} entries, but {ramp.Length} were supplied.";
+            failureReason = GameMate.Localization.LanguageService.Current.Format("Error.GammaRampLength", GammaRampBuilder.RampLength, ramp.Length);
             return false;
         }
 
@@ -93,7 +93,7 @@ public sealed class GammaRampDevice : IGammaRampDevice
         }
         catch (Exception exception) when (exception is DllNotFoundException or EntryPointNotFoundException)
         {
-            failureReason = $"The Windows display API is not available ({exception.Message}).";
+            failureReason = GameMate.Localization.LanguageService.Current.Format("Error.DisplayApiUnavailable", exception.Message);
             return false;
         }
         finally
@@ -113,7 +113,7 @@ public sealed class GammaRampDevice : IGammaRampDevice
 
         if (string.IsNullOrWhiteSpace(display.DeviceName))
         {
-            failureReason = $"The display \"{display.FriendlyName}\" has no GDI device name, so its gamma ramp cannot be read.";
+            failureReason = GameMate.Localization.LanguageService.Current.Format("Error.NoDeviceNameRead", display.FriendlyName);
             return false;
         }
 
@@ -138,7 +138,7 @@ public sealed class GammaRampDevice : IGammaRampDevice
         }
         catch (Exception exception) when (exception is DllNotFoundException or EntryPointNotFoundException)
         {
-            failureReason = $"The Windows display API is not available ({exception.Message}).";
+            failureReason = GameMate.Localization.LanguageService.Current.Format("Error.DisplayApiUnavailable", exception.Message);
             return false;
         }
         finally
@@ -175,7 +175,7 @@ public sealed class GammaRampDevice : IGammaRampDevice
 
         if (string.IsNullOrWhiteSpace(display.DeviceName))
         {
-            failureReason = $"The display \"{display.FriendlyName}\" has no GDI device name, so its gamma ramp cannot be changed.";
+            failureReason = GameMate.Localization.LanguageService.Current.Format("Error.NoDeviceNameChange", display.FriendlyName);
             return false;
         }
 
@@ -187,7 +187,7 @@ public sealed class GammaRampDevice : IGammaRampDevice
         }
         catch (Exception exception) when (exception is DllNotFoundException or EntryPointNotFoundException)
         {
-            failureReason = $"The Windows display API is not available ({exception.Message}).";
+            failureReason = GameMate.Localization.LanguageService.Current.Format("Error.DisplayApiUnavailable", exception.Message);
             return false;
         }
 
@@ -212,9 +212,10 @@ public sealed class GammaRampDevice : IGammaRampDevice
         int error = Marshal.GetLastWin32Error();
 
         string message = error == 0
-            ? "the system reported no error code"
+            ? GameMate.Localization.LanguageService.Current["Error.NoErrorCode"]
             : new Win32Exception(error).Message;
 
-        return $"{operation} failed for \"{display.FriendlyName}\" ({display.DeviceName}): {message}.";
+        return GameMate.Localization.LanguageService.Current.Format(
+            "Error.OperationFailed", operation, display.FriendlyName, display.DeviceName, message);
     }
 }

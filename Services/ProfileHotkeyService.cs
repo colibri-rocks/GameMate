@@ -107,7 +107,7 @@ public sealed class ProfileHotkeyService : IProfileHotkeyService
         }
         catch (Exception exception) when (exception is DllNotFoundException or EntryPointNotFoundException)
         {
-            failureReason = $"The Windows hotkey API is not available ({exception.Message}).";
+            failureReason = GameMate.Localization.LanguageService.Current.Format("Error.HotkeyApiUnavailable", exception.Message);
             return false;
         }
 

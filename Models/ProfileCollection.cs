@@ -1,4 +1,6 @@
-﻿namespace GameMate.Models;
+﻿using System.Globalization;
+
+namespace GameMate.Models;
 
 /// <summary>
 /// Root object persisted as <c>profiles.json</c>.
@@ -34,6 +36,27 @@ public sealed record ProfileCollection
     public AppTheme Theme { get; set; } = AppTheme.System;
 
     /// <summary>
+    /// Gets or sets the interface language the user selected.
+    /// </summary>
+    /// <remarks>
+    /// Persisted now so a later localisation pass has a stable shape to read. Nothing consumes it yet, and the
+    /// schema version is deliberately not bumped for it, for the same reason as <see cref="Theme"/>: raising
+    /// the version would make every existing profiles.json unreadable.
+    /// </remarks>
+    public AppLanguage Language { get; set; } = AppLanguage.English;
+
+    /// <summary>
+    /// Gets or sets how many profile slots the global hotkey steps through.
+    /// </summary>
+    /// <remarks>
+    /// Defaults to <see cref="HotkeyProfileCount.Two"/> so a file written before this setting existed - and a
+    /// new installation - keeps toggling between slots 1 and 2. The schema version is deliberately not bumped
+    /// for it, for the same reason as <see cref="Theme"/>: raising it would make every existing profiles.json
+    /// unreadable.
+    /// </remarks>
+    public HotkeyProfileCount HotkeyProfileCount { get; set; } = HotkeyProfileCount.Two;
+
+    /// <summary>
     /// Gets or sets the profile slots. Always holds exactly <see cref="ColorProfile.SlotCount"/> entries.
     /// </summary>
     public List<ColorProfile> Profiles { get; set; } = [];
@@ -48,11 +71,37 @@ public sealed record ProfileCollection
         {
             Version = CurrentVersion,
             ActiveProfileIndex = 0,
+
+            // Only the first run detects a language; Normalize deliberately leaves a stored preference alone.
+            Language = DetectStartupLanguage(),
         };
 
         collection.Normalize();
 
         return collection;
+    }
+
+    /// <summary>
+    /// Chooses the language a first run starts in, following the Windows UI language.
+    /// </summary>
+    /// <returns>
+    /// <see cref="AppLanguage.Russian"/> when Windows is Russian; otherwise <see cref="AppLanguage.English"/>,
+    /// which is the fallback for every other language.
+    /// </returns>
+    private static AppLanguage DetectStartupLanguage()
+    {
+        // CurrentUICulture is the language of the interface, which is what the user expects the application to
+        // follow. CurrentCulture only governs number and date formatting and would be the wrong signal here.
+        return CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant() switch
+        {
+            "ru" => AppLanguage.Russian,
+            "de" => AppLanguage.German,
+
+            // Covers zh-Hans and zh-CN. Traditional Chinese (zh-Hant) maps here too, which is acceptable
+            // because Simplified is the only Chinese variant offered.
+            "zh" => AppLanguage.ChineseSimplified,
+            _ => AppLanguage.English,
+        };
     }
 
     /// <summary>
@@ -69,6 +118,18 @@ public sealed record ProfileCollection
         if (!Enum.IsDefined(Theme))
         {
             Theme = AppTheme.System;
+        }
+
+        // Same repair for the language, which a hand-edited file could also leave undefined.
+        if (!Enum.IsDefined(Language))
+        {
+            Language = AppLanguage.English;
+        }
+
+        // The hotkey scope is repaired the same way; the old two-profile behaviour is the safe fallback.
+        if (!Enum.IsDefined(HotkeyProfileCount))
+        {
+            HotkeyProfileCount = Models.HotkeyProfileCount.Two;
         }
 
         while (Profiles.Count < ColorProfile.SlotCount)

@@ -8,7 +8,7 @@
     <UseWPF>true</UseWPF>
 
     <!-- Shown in the system information window and in the executable's Windows file properties. -->
-    <Version>0.6.0</Version>
+    <Version>0.7.0</Version>
 
     <!-- NvAPIWrapper resolves nvapi64.dll by name, and that module only exists for 64-bit
          processes: in an x86 host the NVIDIA calls would fail at runtime rather than at build
@@ -31,6 +31,15 @@
     <!-- WMI: reports the video adapter model and driver version for every vendor, including on
          hybrid-graphics machines where each adapter is listed separately. -->
     <PackageReference Include="System.Management" Version="10.0.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Language files ship next to the executable so a translation can be corrected without a rebuild.
+         Content plus CopyToOutputDirectory keeps them in Localization\ beside the assemblies. -->
+    <Content Include="Localization\Strings.en.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Localization\Strings.ru.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Localization\Strings.de.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Localization\Strings.zh-Hans.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

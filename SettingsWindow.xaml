@@ -1,0 +1,155 @@
+﻿<Window x:Class="GameMate.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:loc="clr-namespace:GameMate.Localization"
+        xmlns:models="clr-namespace:GameMate.Models"
+        mc:Ignorable="d"
+        Title="{loc:Loc Settings.Title}"
+        Width="520"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WindowBackgroundBrush}"
+        Foreground="{DynamicResource ForegroundBrush}">
+    <Window.Resources>
+        <Style x:Key="SettingsLabelStyle" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,12,0" />
+            <!-- A translation longer than the column costs a second line rather than losing characters. -->
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <!-- Same chrome as the profile buttons, so a selected option is marked the same way everywhere. An
+             explicit Style replaces the implicit one, so every state is stated here. -->
+        <Style x:Key="OptionToggleStyle" TargetType="ToggleButton">
+            <Setter Property="MinWidth" Value="76" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlBorderBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="1"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+                            </Trigger>
+                            <!-- Checked is the selected option, highlighted exactly like an active profile. -->
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource AccentBrush}" />
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <!-- Shared scope so the three label columns size to the longest translation and stay aligned. -->
+    <Grid Margin="16" Grid.IsSharedSizeScope="True">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsLabelStyle}" Text="{loc:Loc Settings.Theme}" />
+
+            <!-- Three options instead of a dropdown, because the palette must repaint live and these reuse the
+                 already themed profile-button chrome. Each toggle sets the shared theme only when it becomes
+                 checked, so unchecking the previous one cannot clear the selection. -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <ToggleButton Content="{loc:Loc Theme.System}"
+                              Style="{StaticResource OptionToggleStyle}"
+                              IsChecked="{Binding IsThemeSystem, Mode=TwoWay}"
+                              AutomationProperties.Name="{loc:Loc Theme.System}" />
+                <ToggleButton Content="{loc:Loc Theme.Light}"
+                              Style="{StaticResource OptionToggleStyle}"
+                              IsChecked="{Binding IsThemeLight, Mode=TwoWay}"
+                              AutomationProperties.Name="{loc:Loc Theme.Light}" />
+                <ToggleButton Content="{loc:Loc Theme.Dark}"
+                              Style="{StaticResource OptionToggleStyle}"
+                              IsChecked="{Binding IsThemeDark, Mode=TwoWay}"
+                              AutomationProperties.Name="{loc:Loc Theme.Dark}" />
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsLabelStyle}" Text="{loc:Loc Settings.Language}" />
+
+            <!-- The value is remembered but nothing reads it yet, so selecting a language changes no text. -->
+            <ComboBox Grid.Column="1"
+                      HorizontalAlignment="Left"
+                      MinWidth="160"
+                      SelectedValue="{Binding CurrentLanguage, Mode=TwoWay}"
+                      SelectedValuePath="Tag"
+                      AutomationProperties.Name="{loc:Loc Settings.Language}">
+                <ComboBoxItem Content="{loc:Loc Language.Display.English}" Tag="{x:Static models:AppLanguage.English}" />
+                <ComboBoxItem Content="{loc:Loc Language.Display.Russian}" Tag="{x:Static models:AppLanguage.Russian}" />
+                <ComboBoxItem Content="{loc:Loc Language.Display.German}" Tag="{x:Static models:AppLanguage.German}" />
+                <ComboBoxItem Content="{loc:Loc Language.Display.ChineseSimplified}" Tag="{x:Static models:AppLanguage.ChineseSimplified}" />
+            </ComboBox>
+        </Grid>
+
+        <Grid Grid.Row="2" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsLabelStyle}" Text="{loc:Loc Settings.HotkeyScope}" />
+
+            <!-- Two options presented exactly like the Theme row above: the accent fill marks the active scope, and
+                 the style is built from palette tokens so it repaints on a live theme switch. Each toggle applies
+                 its scope only when it becomes checked, so unchecking the other cannot clear the selection. -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <ToggleButton Content="{loc:Loc Settings.HotkeyScope.Two}"
+                              Style="{StaticResource OptionToggleStyle}"
+                              IsChecked="{Binding IsHotkeyScopeTwo, Mode=TwoWay}"
+                              AutomationProperties.Name="{loc:Loc Settings.HotkeyScope.Two}" />
+                <ToggleButton Content="{loc:Loc Settings.HotkeyScope.Three}"
+                              Style="{StaticResource OptionToggleStyle}"
+                              IsChecked="{Binding IsHotkeyScopeThree, Mode=TwoWay}"
+                              AutomationProperties.Name="{loc:Loc Settings.HotkeyScope.Three}" />
+            </StackPanel>
+        </Grid>
+
+        <Button Grid.Row="3"
+                Width="90"
+                Height="28"
+                HorizontalAlignment="Right"
+                Content="{loc:Loc Settings.Close}"
+                IsCancel="True"
+                Background="{DynamicResource ControlBackgroundBrush}"
+                BorderBrush="{DynamicResource ControlBorderBrush}"
+                Foreground="{DynamicResource ForegroundBrush}" />
+    </Grid>
+</Window>

@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Text;
 using GameMate.Infrastructure;
+using GameMate.Localization;
 using GameMate.Models;
 using GameMate.Services;
 
@@ -74,7 +75,7 @@ public sealed class SystemInfoViewModel : ObservableObject
     /// <summary>
     /// Gets the version line shown in the window, for example <c>Version 0.3.0</c>.
     /// </summary>
-    public string SoftwareVersionLabel => $"Version {SoftwareVersion}";
+    public string SoftwareVersionLabel => LanguageService.Current.Format("SystemInfo.Version", SoftwareVersion);
 
     /// <summary>
     /// Gets an explanation of what could not be read, or <see langword="null"/> when everything was
@@ -157,24 +158,24 @@ public sealed class SystemInfoViewModel : ObservableObject
         // The gamma ramp path works on any adapter, so every row in this group is available.
         yield return new FeatureGroup
         {
-            Name = "Windows API (gamma ramp)",
+            NameKey = "Feature.Group.WindowsApi",
             Features =
             [
-                new FeatureSupport { Feature = "Brightness", IsSupported = true },
-                new FeatureSupport { Feature = "Contrast", IsSupported = true },
-                new FeatureSupport { Feature = "Gamma", IsSupported = true },
-                new FeatureSupport { Feature = "Hue (ramp approximation)", IsSupported = true },
+                new FeatureSupport { FeatureKey = "Feature.Brightness", IsSupported = true },
+                new FeatureSupport { FeatureKey = "Feature.Contrast", IsSupported = true },
+                new FeatureSupport { FeatureKey = "Feature.Gamma", IsSupported = true },
+                new FeatureSupport { FeatureKey = "Feature.HueRamp", IsSupported = true },
             ],
         };
 
         // NVAPI is NVIDIA only, so this group follows the presence of an NVIDIA adapter.
         yield return new FeatureGroup
         {
-            Name = "NVAPI (NVIDIA)",
+            NameKey = "Feature.Group.Nvapi",
             Features =
             [
-                new FeatureSupport { Feature = "Digital Vibrance", IsSupported = hasNvidia },
-                new FeatureSupport { Feature = "Hue (native, preferred)", IsSupported = hasNvidia },
+                new FeatureSupport { FeatureKey = "Feature.Vibrance", IsSupported = hasNvidia },
+                new FeatureSupport { FeatureKey = "Feature.HueNative", IsSupported = hasNvidia },
             ],
         };
     }
@@ -287,7 +288,7 @@ public sealed class SystemInfoViewModel : ObservableObject
         }
 
         builder.AppendLine();
-        builder.AppendLine("Feature matrix");
+        builder.AppendLine(LanguageService.Current["SystemInfo.Section.FeatureMatrix"]);
 
         foreach (FeatureGroup group in FeatureGroups)
         {

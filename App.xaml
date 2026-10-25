@@ -13,6 +13,13 @@
                     a dark setting never flashes light first.
                 -->
                 <ResourceDictionary Source="Themes/Tokens.Light.xaml" />
+
+                <!--
+                    Control styles are merged after the palette so their DynamicResource token lookups
+                    resolve, and so they win for any key the palette also defines. ThemeManager replaces
+                    only the palette entry, so these survive a theme switch.
+                -->
+                <ResourceDictionary Source="Themes/Controls.ComboBox.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

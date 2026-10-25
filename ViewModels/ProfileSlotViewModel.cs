@@ -1,4 +1,5 @@
 ﻿using GameMate.Infrastructure;
+using GameMate.Localization;
 
 namespace GameMate.ViewModels;
 
@@ -41,7 +42,35 @@ public sealed class ProfileSlotViewModel : ObservableObject
     public string Name
     {
         get => _name;
-        set => SetProperty(ref _name, value);
+        set
+        {
+            if (SetProperty(ref _name, value))
+            {
+                // The button shows DisplayName, which is derived from this value.
+                OnPropertyChanged(nameof(DisplayName));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the text shown on the button.
+    /// </summary>
+    /// <remarks>
+    /// A slot that still carries its automatic name is rendered in the selected language, while the stored name
+    /// stays <c>Profile 1</c> so switching language never rewrites profiles.json. As soon as the user renames the
+    /// slot, their own text is shown verbatim whatever the language is.
+    /// </remarks>
+    public string DisplayName =>
+        Name == $"Profile {Number}"
+            ? LanguageService.Current.Format("Profile.DefaultName", Number)
+            : Name;
+
+    /// <summary>
+    /// Re-raises <see cref="DisplayName"/> after the interface language changed.
+    /// </summary>
+    public void NotifyLanguageChanged()
+    {
+        OnPropertyChanged(nameof(DisplayName));
     }
 
     /// <summary>

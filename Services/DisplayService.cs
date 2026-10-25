@@ -123,7 +123,7 @@ public sealed class DisplayService : IDisplayService
             // window is being built.
             _availability = NvidiaAvailability.Unavailable(
                 $"The NVIDIA driver could not be initialised ({exception.GetType().Name}: {exception.Message}). "
-                + "Digital Vibrance is disabled; Brightness, Contrast, Gamma and Hue fall back to the display gamma ramp.");
+                + GameMate.Localization.LanguageService.Current["Nvidia.Summary.VibranceFallback"]);
         }
 
         return _availability;
@@ -146,7 +146,7 @@ public sealed class DisplayService : IDisplayService
         {
             _availability = NvidiaAvailability.Unavailable(
                 $"The NVIDIA display list could not be read ({exception.GetType().Name}: {exception.Message}). "
-                + "Digital Vibrance is disabled; Brightness, Contrast, Gamma and Hue fall back to the display gamma ramp.");
+                + GameMate.Localization.LanguageService.Current["Nvidia.Summary.VibranceFallback"]);
 
             return [];
         }

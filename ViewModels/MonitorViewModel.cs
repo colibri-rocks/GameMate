@@ -1,4 +1,5 @@
 ﻿using GameMate.Infrastructure;
+using GameMate.Localization;
 using GameMate.Models;
 using GameMate.Services;
 
@@ -56,7 +57,20 @@ public sealed class MonitorViewModel : ObservableObject
     /// <summary>
     /// Gets the label shown in the selector, formatted the way the NVIDIA Control Panel formats it.
     /// </summary>
-    public string DisplayLabel => $"{Display.Ordinal}. {Display.FriendlyName} (Display {Display.Ordinal})";
+    /// <remarks>
+    /// The connector words come from the language file, while the ordinal and the monitor name are inserted as
+    /// they are: the name is reported by the hardware and must never be translated.
+    /// </remarks>
+    public string DisplayLabel =>
+        LanguageService.Current.Format("Main.DisplayLabel", Display.Ordinal, Display.FriendlyName);
+
+    /// <summary>
+    /// Re-raises <see cref="DisplayLabel"/> after the interface language changed.
+    /// </summary>
+    public void NotifyLanguageChanged()
+    {
+        OnPropertyChanged(nameof(DisplayLabel));
+    }
 
     /// <summary>
     /// Gets the resolution of the current mode as text, for example <c>3840 x 2160</c>.
