@@ -1,6 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using GameMate.Models;
 
 namespace GameMate.Services;
 
@@ -47,20 +48,14 @@ public sealed class ProfileHotkeyService : IProfileHotkeyService
     private const int HotkeyId = 0x476D;
 
     /// <summary>
-    /// Modifier set of the profile toggle chord.
+    /// Chord currently registered, or the chord to register on the next call.
     /// </summary>
     /// <remarks>
-    /// A triple modifier is deliberate. Two-modifier Alt chords are claimed by the GeForce Experience
-    /// overlay namespace (Ctrl+Alt+P in particular) and plain chords clash with Windows and Steam, so
-    /// Ctrl+Alt+Shift+P is a combination no mainstream application binds by default. A letter key is
-    /// used because it exists on every keyboard layout, unlike punctuation keys such as '='.
+    /// The default is Ctrl+Alt+Shift+P: a triple modifier that no mainstream application binds, with a letter
+    /// key because that exists on every keyboard layout. Auto-repeat suppression lives in the preset mapping,
+    /// so holding the chord fires it once instead of ping-ponging the profiles.
     /// </remarks>
-    private const HotkeyModifiers Modifiers = HotkeyModifiers.Control | HotkeyModifiers.Alt | HotkeyModifiers.Shift | HotkeyModifiers.NoRepeat;
-
-    /// <summary>
-    /// Virtual-key code of the chord's key: 0x50 is 'P'.
-    /// </summary>
-    private const uint VirtualKey = 0x50;
+    public HotkeyPreset Preset { get; private set; } = HotkeyPreset.CtrlAltShiftP;
 
     private HwndSource? _source;
     private bool _disposed;
@@ -73,6 +68,62 @@ public sealed class ProfileHotkeyService : IProfileHotkeyService
 
     /// <inheritdoc />
     public bool TryRegister(Window window, out string? failureReason)
+    {
+        return TryRegister(window, Preset, out failureReason);
+    }
+
+    /// <summary>
+    /// Replaces the registered chord, restoring the previous one if the new chord is refused.
+    /// </summary>
+    /// <param name="window">Window that receives the hotkey message.</param>
+    /// <param name="preset">Chord to register.</param>
+    /// <param name="failureReason">User readable reason when the new chord was refused; otherwise null.</param>
+    /// <returns><see langword="true"/> when the new chord is now registered.</returns>
+    /// <remarks>
+    /// Rollback is the important part: without it a refused chord would leave the application with no working
+    /// hotkey at all, silently removing a shortcut the user already had.
+    /// </remarks>
+    public bool TryChangePreset(Window window, HotkeyPreset preset, out string? failureReason)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentNullException.ThrowIfNull(window);
+
+        if (IsRegistered && Preset == preset)
+        {
+            failureReason = null;
+            return true;
+        }
+
+        HotkeyPreset previous = Preset;
+
+        // Released first so the old chord cannot keep firing alongside the new one.
+        Unregister();
+
+        if (TryRegister(window, preset, out failureReason))
+        {
+            return true;
+        }
+
+        // Restore the chord the user had before the refused change.
+        if (TryRegister(window, previous, out _))
+        {
+            // The rollback succeeded, so the caller still has a working hotkey to report against.
+            failureReason ??= GameMate.Localization.LanguageService.Current.Format(
+                "Error.HotkeyConflict",
+                HotkeyPresetInfo.GetDisplayText(preset));
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Registers a specific chord against a window.
+    /// </summary>
+    /// <param name="window">Window that receives the hotkey message.</param>
+    /// <param name="preset">Chord to register.</param>
+    /// <param name="failureReason">User readable reason when registration failed; otherwise null.</param>
+    /// <returns><see langword="true"/> when the chord is now registered.</returns>
+    private bool TryRegister(Window window, HotkeyPreset preset, out string? failureReason)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentNullException.ThrowIfNull(window);
@@ -93,15 +144,19 @@ public sealed class ProfileHotkeyService : IProfileHotkeyService
             return false;
         }
 
+        HotkeyModifiers modifiers = (HotkeyModifiers)HotkeyPresetInfo.GetModifiers(preset);
+        uint virtualKey = HotkeyPresetInfo.GetVirtualKey(preset);
+
         try
         {
-            if (!RegisterHotKey(handle, HotkeyId, (uint)Modifiers, VirtualKey))
+            if (!RegisterHotKey(handle, HotkeyId, (uint)modifiers, virtualKey))
             {
                 // Windows reports a refused registration by returning false rather than by throwing, and
                 // the usual cause is another process owning the chord. Surfacing it here is what keeps
                 // the shortcut from being a silent no-op.
-                failureReason = "Ctrl+Alt+Shift+P is already owned by another application, so the "
-                              + "profile toggle hotkey is unavailable.";
+                failureReason = GameMate.Localization.LanguageService.Current.Format(
+                    "Error.HotkeyConflict",
+                    HotkeyPresetInfo.GetDisplayText(preset));
                 return false;
             }
         }
@@ -114,6 +169,7 @@ public sealed class ProfileHotkeyService : IProfileHotkeyService
         _source = HwndSource.FromHwnd(handle);
         _source?.AddHook(OnWindowMessage);
 
+        Preset = preset;
         IsRegistered = true;
         failureReason = null;
         return true;

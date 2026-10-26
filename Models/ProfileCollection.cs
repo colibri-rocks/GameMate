@@ -57,6 +57,16 @@ public sealed record ProfileCollection
     public HotkeyProfileCount HotkeyProfileCount { get; set; } = HotkeyProfileCount.Two;
 
     /// <summary>
+    /// Gets or sets the global chord registered for the profile toggle hotkey.
+    /// </summary>
+    /// <remarks>
+    /// Defaults to <see cref="HotkeyPreset.CtrlAltShiftP"/>, the chord earlier versions always used, so a file
+    /// written before this setting existed keeps its previous behaviour. The schema version is deliberately not
+    /// bumped for it, for the same reason as <see cref="Theme"/>.
+    /// </remarks>
+    public HotkeyPreset Hotkey { get; set; } = HotkeyPreset.CtrlAltShiftP;
+
+    /// <summary>
     /// Gets or sets the profile slots. Always holds exactly <see cref="ColorProfile.SlotCount"/> entries.
     /// </summary>
     public List<ColorProfile> Profiles { get; set; } = [];
@@ -130,6 +140,12 @@ public sealed record ProfileCollection
         if (!Enum.IsDefined(HotkeyProfileCount))
         {
             HotkeyProfileCount = Models.HotkeyProfileCount.Two;
+        }
+
+        // An undefined chord would register nothing at all, so it falls back to the original Ctrl+Alt+Shift+P.
+        if (!Enum.IsDefined(Hotkey))
+        {
+            Hotkey = HotkeyPreset.CtrlAltShiftP;
         }
 
         while (Profiles.Count < ColorProfile.SlotCount)

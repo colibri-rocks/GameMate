@@ -33,6 +33,12 @@ public partial class MainWindow : Window
     private readonly ISystemInfoService _systemInfoService;
 
     /// <summary>
+    /// Compares the running version with the published releases. One instance per process, which is what makes
+    /// the update check cost a single request per application run rather than one per window open.
+    /// </summary>
+    private readonly IUpdateCheckService _updateCheckService;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="MainWindow"/> class and wires the concrete
     /// services, so the window owns the only composition root of the application.
     /// </summary>
@@ -56,6 +62,10 @@ public partial class MainWindow : Window
 
         _systemInfoService = new SystemInfoService(displayService);
 
+        // Created once and reused by every system information window, so the session cache in the service actually
+        // spans the session.
+        _updateCheckService = new UpdateCheckService();
+
         DataContext = _viewModel;
 
         // The window has no handle before SourceInitialized, which is also the earliest point at which
@@ -69,6 +79,7 @@ public partial class MainWindow : Window
         // it, which keeps the view model free of any dependency on WPF windows.
         _viewModel.SystemInfoRequested += OnSystemInfoRequested;
         _viewModel.SettingsRequested += OnSettingsRequested;
+        _viewModel.HotkeyChangeRequested += OnHotkeyChangeRequested;
 
         // The hotkey has to work while GameMate is unfocused, so it is registered globally rather than
         // as a key binding.
@@ -91,6 +102,13 @@ public partial class MainWindow : Window
 
         _viewModel.Initialize();
 
+        // The chord claimed in SourceInitialized was the default, because the profile file is only read here.
+        // Applying the stored choice now re-registers the hotkey only when the two actually differ.
+        if (!_hotkeyService.TryChangePreset(this, _viewModel.CurrentHotkey, out string? hotkeyFailure))
+        {
+            _viewModel.RevertHotkey(_hotkeyService.Preset, hotkeyFailure);
+        }
+
         // SizeToContent re-measures the window from the content tree on every layout pass and overrides a
         // manual resize, so height control is handed back to the user (and to MinHeight) once the window
         // has sized itself. This must run after Initialize, which is what establishes the final content
@@ -109,6 +127,7 @@ public partial class MainWindow : Window
         _themeManager.ThemeChanged -= OnThemeChanged;
         _viewModel.SystemInfoRequested -= OnSystemInfoRequested;
         _viewModel.SettingsRequested -= OnSettingsRequested;
+        _viewModel.HotkeyChangeRequested -= OnHotkeyChangeRequested;
 
         // Releasing the chord here matters: an unregistered global hotkey stays owned by the process
         // until it exits, so a relaunch would fail to register it again.
@@ -135,6 +154,21 @@ public partial class MainWindow : Window
             // Windows refuses a chord another application owns without raising an error, so the outcome
             // is reported rather than left as a silently dead shortcut.
             _viewModel.ReportHotkeyUnavailable(failureReason);
+        }
+    }
+
+    /// <summary>
+    /// Re-registers the global hotkey after the user picks another chord.
+    /// </summary>
+    /// <param name="sender">View model that raised the request.</param>
+    /// <param name="e">Event data.</param>
+    private void OnHotkeyChangeRequested(object? sender, EventArgs e)
+    {
+        // The service rolls back to the previous chord when the new one is claimed elsewhere, so the view
+        // model has to mirror that: leaving the refused value selected would misreport what is registered.
+        if (!_hotkeyService.TryChangePreset(this, _viewModel.CurrentHotkey, out string? failureReason))
+        {
+            _viewModel.RevertHotkey(_hotkeyService.Preset, failureReason);
         }
     }
 
@@ -188,7 +222,7 @@ public partial class MainWindow : Window
         // fresh, because they are not available anywhere else.
         IReadOnlyList<MonitorViewModel> monitors = _viewModel.Displays.ToList();
 
-        SystemInfoViewModel viewModel = new(_systemInfoService, monitors);
+        SystemInfoViewModel viewModel = new(_systemInfoService, _updateCheckService, monitors);
         SystemInfoWindow window = new(viewModel, _themeManager) { Owner = this };
 
         // Modal on purpose: the information is a snapshot, and the window must not stay open while the

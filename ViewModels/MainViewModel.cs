@@ -125,7 +125,63 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     /// <summary>
     /// Gets the key combination of the global profile toggle, shown in bold in the window hint.
     /// </summary>
-    public string HotkeyCombination => "Ctrl+Alt+Shift+P";
+    public string HotkeyCombination => HotkeyPresetInfo.GetDisplayText(_profiles.Hotkey);
+
+    /// <summary>
+    /// Occurs when the user picks another global chord, which the composition root applies to the hotkey service.
+    /// </summary>
+    public event EventHandler? HotkeyChangeRequested;
+
+    /// <summary>
+    /// Gets or sets the global chord registered for the profile toggle hotkey.
+    /// </summary>
+    /// <remarks>
+    /// Setting this persists the choice and asks the composition root to re-register, because registering a
+    /// system-wide hotkey is a view concern: only the window owns the <c>HwndSource</c> the chord binds to.
+    /// </remarks>
+    public HotkeyPreset CurrentHotkey
+    {
+        get => _profiles.Hotkey;
+        set
+        {
+            // An undefined value could only arrive from code rather than the bound ComboBox, but it must never
+            // reach RegisterHotKey, where it would map to no virtual key at all.
+            if (!Enum.IsDefined(value) || _profiles.Hotkey == value)
+            {
+                return;
+            }
+
+            _profiles.Hotkey = value;
+
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HotkeyCombination));
+
+            HotkeyChangeRequested?.Invoke(this, EventArgs.Empty);
+
+            ScheduleProfileSave();
+        }
+    }
+
+    /// <summary>
+    /// Puts the stored chord back after the hotkey service refused a change, and reports why.
+    /// </summary>
+    /// <param name="preset">Chord that is actually registered.</param>
+    /// <param name="reason">Explanation produced by the hotkey service.</param>
+    /// <remarks>
+    /// Deliberately does not raise <see cref="HotkeyChangeRequested"/>: this is the rollback path, so asking
+    /// for another registration would loop forever.
+    /// </remarks>
+    public void RevertHotkey(HotkeyPreset preset, string? reason)
+    {
+        _profiles.Hotkey = preset;
+
+        OnPropertyChanged(nameof(CurrentHotkey));
+        OnPropertyChanged(nameof(HotkeyCombination));
+
+        ReportHotkeyUnavailable(reason);
+
+        ScheduleProfileSave();
+    }
 
     /// <summary>
     /// Gets the name of the first profile slot, shown in bold in the window hint.

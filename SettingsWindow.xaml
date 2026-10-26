@@ -68,6 +68,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0" Margin="0,0,0,10">
@@ -125,6 +126,40 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsLabelStyle}" Text="{loc:Loc Settings.Hotkey}" />
+
+            <StackPanel Grid.Column="1">
+                <!-- Chord names are deliberately not localised: key names read the same in every language. -->
+                <ComboBox HorizontalAlignment="Left"
+                          MinWidth="190"
+                          SelectedValue="{Binding CurrentHotkey, Mode=TwoWay}"
+                          SelectedValuePath="Tag"
+                          AutomationProperties.Name="{loc:Loc Settings.Hotkey}">
+                    <ComboBoxItem Content="Ctrl+Alt+Shift+P" Tag="{x:Static models:HotkeyPreset.CtrlAltShiftP}" />
+                    <ComboBoxItem Content="Ctrl+Alt+Shift+Insert" Tag="{x:Static models:HotkeyPreset.CtrlAltShiftInsert}" />
+                    <ComboBoxItem Content="Ctrl+Alt+Shift+Home" Tag="{x:Static models:HotkeyPreset.CtrlAltShiftHome}" />
+                    <ComboBoxItem Content="Ctrl+Alt+Shift+End" Tag="{x:Static models:HotkeyPreset.CtrlAltShiftEnd}" />
+                    <ComboBoxItem Content="Ctrl+Alt+Shift+ScrollLock" Tag="{x:Static models:HotkeyPreset.CtrlAltShiftScrollLock}" />
+                    <ComboBoxItem Content="F13" Tag="{x:Static models:HotkeyPreset.F13}" />
+                    <ComboBoxItem Content="Ctrl+F13" Tag="{x:Static models:HotkeyPreset.CtrlF13}" />
+                    <ComboBoxItem Content="Alt+F13" Tag="{x:Static models:HotkeyPreset.AltF13}" />
+                </ComboBox>
+
+                <!-- F13 registers fine but the key only exists on 122-key and other extended layouts. -->
+                <TextBlock Margin="0,4,0,0"
+                           FontSize="11"
+                           Foreground="{DynamicResource ForegroundMutedBrush}"
+                           Text="{loc:Loc Settings.HotkeyNote}"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="3" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
             <TextBlock Grid.Column="0" Style="{StaticResource SettingsLabelStyle}" Text="{loc:Loc Settings.HotkeyScope}" />
 
             <!-- Two options presented exactly like the Theme row above: the accent fill marks the active scope, and
@@ -133,16 +168,18 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <ToggleButton Content="{loc:Loc Settings.HotkeyScope.Two}"
                               Style="{StaticResource OptionToggleStyle}"
+                              MinWidth="108"
                               IsChecked="{Binding IsHotkeyScopeTwo, Mode=TwoWay}"
                               AutomationProperties.Name="{loc:Loc Settings.HotkeyScope.Two}" />
                 <ToggleButton Content="{loc:Loc Settings.HotkeyScope.Three}"
                               Style="{StaticResource OptionToggleStyle}"
+                              MinWidth="108"
                               IsChecked="{Binding IsHotkeyScopeThree, Mode=TwoWay}"
                               AutomationProperties.Name="{loc:Loc Settings.HotkeyScope.Three}" />
             </StackPanel>
         </Grid>
 
-        <Button Grid.Row="3"
+        <Button Grid.Row="4"
                 Width="90"
                 Height="28"
                 HorizontalAlignment="Right"

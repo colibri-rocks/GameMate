@@ -14,19 +14,32 @@ namespace GameMate.ViewModels;
 public sealed class SystemInfoViewModel : ObservableObject
 {
     /// <summary>
+    /// Performs the version comparison against the published releases.
+    /// </summary>
+    private readonly IUpdateCheckService _updateCheckService;
+
+    private UpdateCheckResult _update = UpdateCheckResult.NotChecked();
+    /// <summary>
     /// Initializes a new instance of the <see cref="SystemInfoViewModel"/> class and gathers the
     /// machine information immediately, because the window only exists while the user is looking at it.
     /// </summary>
     /// <param name="systemInfoService">Source of the operating system and video adapter information.</param>
+    /// <param name="updateCheckService">Compares the running version with the published releases.</param>
     /// <param name="monitors">
     /// Displays detected at startup, which the main view model already enumerated. Reusing them is what
     /// makes the resolution and the primary flag available here without enumerating the displays twice.
     /// </param>
     /// <exception cref="ArgumentNullException">Thrown when any dependency is null.</exception>
-    public SystemInfoViewModel(ISystemInfoService systemInfoService, IEnumerable<MonitorViewModel> monitors)
+    public SystemInfoViewModel(
+        ISystemInfoService systemInfoService,
+        IUpdateCheckService updateCheckService,
+        IEnumerable<MonitorViewModel> monitors)
     {
         ArgumentNullException.ThrowIfNull(systemInfoService);
+        ArgumentNullException.ThrowIfNull(updateCheckService);
         ArgumentNullException.ThrowIfNull(monitors);
+
+        _updateCheckService = updateCheckService;
 
         SystemInfo info = systemInfoService.GetSystemInfo();
 
@@ -76,6 +89,81 @@ public sealed class SystemInfoViewModel : ObservableObject
     /// Gets the version line shown in the window, for example <c>Version 0.3.0</c>.
     /// </summary>
     public string SoftwareVersionLabel => LanguageService.Current.Format("SystemInfo.Version", SoftwareVersion);
+
+    /// <summary>
+    /// Gets a value indicating whether an update check is in flight.
+    /// </summary>
+    public bool IsCheckingUpdate => _update.State == UpdateCheckState.Checking;
+
+    /// <summary>
+    /// Gets a value indicating whether the last check could not complete.
+    /// </summary>
+    public bool HasUpdateFailure => _update.State == UpdateCheckState.Failed;
+
+    /// <summary>
+    /// Gets a value indicating whether a release newer than this build exists.
+    /// </summary>
+    public bool HasNewVersion => _update.State == UpdateCheckState.NewVersionAvailable;
+
+    /// <summary>
+    /// Gets the new-version line, for example <c>New version available 0.7.2</c>.
+    /// </summary>
+    /// <remarks>
+    /// Only the wording is translated; the version itself is digits and dots and therefore identical in every
+    /// language.
+    /// </remarks>
+    public string NewVersionText => _update.LatestVersion is { Length: > 0 } version
+        ? LanguageService.Current.Format("SystemInfo.NewVersionAvailable", version)
+        : string.Empty;
+
+    /// <summary>
+    /// Gets the download URI of the newer release, or an empty string when none is known.
+    /// </summary>
+    public string NewVersionUrl => _update.DownloadUrl ?? string.Empty;
+
+    /// <summary>
+    /// Runs the update check and republishes the derived state.
+    /// </summary>
+    /// <param name="force">
+    /// <see langword="true"/> to ignore a cached result and query the release feed again.
+    /// </param>
+    /// <returns>A task that completes once the new state has been published.</returns>
+    /// <remarks>
+    /// Kept off the constructor on purpose: the window must appear immediately, and a network round trip must
+    /// never be able to delay or block it.
+    /// </remarks>
+    public async Task LoadUpdateStateAsync(bool force)
+    {
+        // An already-known state is reused, which is what keeps a reopened window from paying a second request;
+        // the explicit "check now" path passes force: true.
+        if (!force && _update.State != UpdateCheckState.Unknown)
+        {
+            return;
+        }
+
+        ApplyUpdateResult(UpdateCheckResult.InProgress());
+
+        // ConfigureAwait(true) is required: the continuations touch bound properties, so they must land back on
+        // the UI thread that owns the window.
+        UpdateCheckResult result = await _updateCheckService.CheckAsync(force).ConfigureAwait(true);
+
+        ApplyUpdateResult(result);
+    }
+
+    /// <summary>
+    /// Stores a result and raises every derived notification.
+    /// </summary>
+    /// <param name="result">Result to publish.</param>
+    private void ApplyUpdateResult(UpdateCheckResult result)
+    {
+        _update = result;
+
+        OnPropertyChanged(nameof(IsCheckingUpdate));
+        OnPropertyChanged(nameof(HasUpdateFailure));
+        OnPropertyChanged(nameof(HasNewVersion));
+        OnPropertyChanged(nameof(NewVersionText));
+        OnPropertyChanged(nameof(NewVersionUrl));
+    }
 
     /// <summary>
     /// Gets an explanation of what could not be read, or <see langword="null"/> when everything was
