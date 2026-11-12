@@ -51,35 +51,9 @@
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <StackPanel Margin="0,0,0,10">
+                <StackPanel Margin="0,0,0,6">
                     <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="{loc:Loc SystemInfo.Section.GameMate}" />
                     <TextBlock Text="{Binding SoftwareVersionLabel}" TextWrapping="Wrap" />
-
-                    <!-- Update check: at most one of the first three lines is visible at a time. -->
-                    <TextBlock Margin="0,4,0,0"
-                               Style="{StaticResource FieldLabelStyle}"
-                               Text="{loc:Loc SystemInfo.CheckingUpdate}"
-                               Visibility="{Binding IsCheckingUpdate, Converter={StaticResource BooleanToVisibility}}" />
-
-                    <TextBlock Margin="0,4,0,0"
-                               Style="{StaticResource FieldLabelStyle}"
-                               Text="{loc:Loc SystemInfo.UpdateFailed}"
-                               Visibility="{Binding HasUpdateFailure, Converter={StaticResource BooleanToVisibility}}" />
-
-                    <TextBlock Margin="0,4,0,0"
-                               TextWrapping="Wrap"
-                               Visibility="{Binding HasNewVersion, Converter={StaticResource BooleanToVisibility}}">
-                        <Hyperlink Foreground="{DynamicResource AccentBrush}"
-                                   NavigateUri="{Binding NewVersionUrl}"
-                                   RequestNavigate="OnHyperlinkRequestNavigate"><Run Text="{Binding NewVersionText, Mode=OneWay}" /></Hyperlink>
-                    </TextBlock>
-
-                    <!-- Manual refresh, always available so a release published mid-session can still be picked up.
-                         Uses Click rather than RequestNavigate because this is an action, not a link target. -->
-                    <TextBlock Margin="0,4,0,0">
-                        <Hyperlink Foreground="{DynamicResource AccentBrush}"
-                                   Click="OnCheckNowClick"><Run Text="{loc:Loc SystemInfo.CheckNow}" /></Hyperlink>
-                    </TextBlock>
 
                     <TextBlock Margin="0,6,0,0"
                                Style="{StaticResource FieldLabelStyle}"
@@ -90,15 +64,6 @@
                                    Foreground="{DynamicResource AccentBrush}"
                                    RequestNavigate="OnHyperlinkRequestNavigate">https://github.com/colibri-rocks/GameMate</Hyperlink>
                     </TextBlock>
-
-                    <TextBlock Margin="0,6,0,0"
-                               Style="{StaticResource FieldLabelStyle}"
-                               Text="{loc:Loc SystemInfo.LatestVersion}" />
-                    <TextBlock TextWrapping="Wrap">
-                        <Hyperlink NavigateUri="https://github.com/colibri-rocks/GameMate/releases"
-                                   Foreground="{DynamicResource AccentBrush}"
-                                   RequestNavigate="OnHyperlinkRequestNavigate">https://github.com/colibri-rocks/GameMate/releases</Hyperlink>
-                    </TextBlock>
                 </StackPanel>
 
                 <!-- Shown only when something could not be read, so the successful state stays clean. -->
@@ -108,7 +73,7 @@
                            TextWrapping="Wrap"
                            Visibility="{Binding HasWarning, Converter={StaticResource BooleanToVisibility}}" />
 
-                <StackPanel Margin="0,0,0,10">
+                <StackPanel Margin="0,0,0,6">
                     <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="{loc:Loc SystemInfo.Section.Windows}" />
                     <TextBlock Text="{Binding WindowsEdition}" TextWrapping="Wrap" />
                     <TextBlock Margin="0,2,0,0"

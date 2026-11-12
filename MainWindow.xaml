@@ -492,16 +492,51 @@
             </StackPanel>
         </Grid>
 
-        <!-- Full width so the sentence never has to wrap, and below the body so it reads as a footer. -->
-        <TextBlock Grid.Row="2"
-                   Margin="0,10,0,0"
-                   FontSize="11"
-                   Foreground="{DynamicResource ForegroundMutedBrush}"
-                   TextWrapping="NoWrap">
-            <!-- Bold only the things the user acts on directly; the rest stays muted.
-                 Mode=OneWay is required: Run.Text binds TwoWay by default, which a read-only
-                 computed property cannot satisfy. -->
-            <Run FontWeight="Bold" Text="{Binding HotkeyCombination, Mode=OneWay}" /><Run Text="{loc:Loc Main.HotkeyHint.Middle}" /><Run FontWeight="Bold" Text="{Binding ProfileOneName, Mode=OneWay}" /><Run Text="{Binding HotkeyHintSeparator, Mode=OneWay}" /><Run FontWeight="Bold" Text="{Binding ProfileTwoName, Mode=OneWay}" /><Run Text="{Binding HotkeyHintThirdJoin, Mode=OneWay}" /><Run FontWeight="Bold" Text="{Binding ProfileThreeName, Mode=OneWay}" /><Run Text="{loc:Loc Main.HotkeyHint.Rename}" />
-        </TextBlock>
+        <!-- Full width so the sentence never has to wrap, and below the body so it reads as a footer.
+             The version label takes the second column so it stays right-aligned whatever the hint does. -->
+        <Grid Grid.Row="2" Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0"
+                       FontSize="11"
+                       Foreground="{DynamicResource ForegroundMutedBrush}"
+                       TextWrapping="NoWrap">
+                <!-- Bold only the things the user acts on directly; the rest stays muted.
+                     Mode=OneWay is required: Run.Text binds TwoWay by default, which a read-only
+                     computed property cannot satisfy. -->
+                <Run FontWeight="Bold" Text="{Binding HotkeyCombination, Mode=OneWay}" /><Run Text="{loc:Loc Main.HotkeyHint.Middle}" /><Run FontWeight="Bold" Text="{Binding ProfileOneName, Mode=OneWay}" /><Run Text="{Binding HotkeyHintSeparator, Mode=OneWay}" /><Run FontWeight="Bold" Text="{Binding ProfileTwoName, Mode=OneWay}" /><Run Text="{Binding HotkeyHintThirdJoin, Mode=OneWay}" /><Run FontWeight="Bold" Text="{Binding ProfileThreeName, Mode=OneWay}" /><Run Text="{loc:Loc Main.HotkeyHint.Rename}" />
+            </TextBlock>
+
+            <!-- Colour follows the update state: green when current, red when a newer release exists, and the
+                 muted foreground while checking or after a failed check, so a network failure never reads as
+                 "out of date". Clicking opens the update window. -->
+            <TextBlock Grid.Column="1"
+                       Margin="12,0,0,0"
+                       FontSize="11"
+                       VerticalAlignment="Top"
+                       Cursor="Hand"
+                       Text="{Binding VersionLabel}"
+                       ToolTip="{Binding UpdateTooltip}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{DynamicResource ForegroundMutedBrush}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding UpdateVisualState}" Value="UpToDate">
+                                <Setter Property="Foreground" Value="{DynamicResource UpdateCurrentBrush}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding UpdateVisualState}" Value="NewVersionAvailable">
+                                <Setter Property="Foreground" Value="{DynamicResource UpdateAvailableBrush}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+                <TextBlock.InputBindings>
+                    <MouseBinding MouseAction="LeftClick" Command="{Binding ShowUpdateCommand}" />
+                </TextBlock.InputBindings>
+            </TextBlock>
+        </Grid>
     </Grid>
 </Window>

@@ -26,6 +26,11 @@
     <SolidColorBrush x:Key="AccentBorderBrush" Color="#FF1B5E9E" />
     <SolidColorBrush x:Key="AccentForegroundBrush" Color="#FFFFFFFF" />
 
+    <!-- Update status shown by the footer version label. Green means current, red means a newer
+         release exists, and muted (the ordinary foreground) means the state is not known yet. -->
+    <SolidColorBrush x:Key="UpdateCurrentBrush" Color="#FF1B7F3B" />
+    <SolidColorBrush x:Key="UpdateAvailableBrush" Color="#FFC62828" />
+
     <!-- Generic control chrome -->
     <SolidColorBrush x:Key="ControlBackgroundBrush" Color="#FFFFFFFF" />
     <SolidColorBrush x:Key="ControlBorderBrush" Color="#FFB8B8B8" />

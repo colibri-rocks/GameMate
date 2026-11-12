@@ -46,9 +46,6 @@ public partial class SystemInfoWindow : Window
         // The window has no handle before SourceInitialized, which is also the earliest point at which
         // the native title bar can be switched to dark.
         SourceInitialized += OnWindowSourceInitialized;
-
-        // The update check is started only once the window exists, so a slow network can never delay it.
-        Loaded += OnWindowLoaded;
     }
 
     /// <summary>
@@ -108,31 +105,5 @@ public partial class SystemInfoWindow : Window
         }
 
         e.Handled = true;
-    }
-
-    /// <summary>
-    /// Starts the update check once the window is visible.
-    /// </summary>
-    /// <param name="sender">Window that was loaded.</param>
-    /// <param name="e">Event data.</param>
-    /// <remarks>
-    /// Async void is correct for an event handler, and it cannot throw here: the service resolves every failure
-    /// to a result rather than an exception, so an offline machine simply lands on the failure line.
-    /// </remarks>
-    private async void OnWindowLoaded(object sender, RoutedEventArgs e)
-    {
-        Loaded -= OnWindowLoaded;
-
-        await _viewModel.LoadUpdateStateAsync(false);
-    }
-
-    /// <summary>
-    /// Re-runs the update check at the user's request.
-    /// </summary>
-    /// <param name="sender">Hyperlink that was clicked.</param>
-    /// <param name="e">Event data.</param>
-    private async void OnCheckNowClick(object sender, RoutedEventArgs e)
-    {
-        await _viewModel.LoadUpdateStateAsync(true);
     }
 }

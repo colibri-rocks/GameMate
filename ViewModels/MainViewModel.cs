@@ -45,6 +45,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _disposed;
 
     /// <summary>
+    /// Compares the running version with the published releases so the footer can report it.
+    /// </summary>
+    private readonly IUpdateCheckService _updateCheckService;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="MainViewModel"/> class.
     /// </summary>
     /// <param name="displayService">Source of the active displays and of the NVAPI availability.</param>
@@ -52,24 +57,28 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     /// <param name="nvidiaColorService">Carrier for Digital Vibrance and hue.</param>
     /// <param name="profileStore">Persistence for the three profile slots.</param>
     /// <param name="themeManager">Applies the palette when the user cycles the theme.</param>
+    /// <param name="updateCheckService">Compares the running version with the published releases.</param>
     /// <exception cref="ArgumentNullException">Thrown when any dependency is null.</exception>
     public MainViewModel(
         IDisplayService displayService,
         IGammaRampDevice gammaRampDevice,
         INvidiaColorService nvidiaColorService,
         IProfileStore profileStore,
-        IThemeManager themeManager)
+        IThemeManager themeManager,
+        IUpdateCheckService updateCheckService)
     {
         _displayService = displayService ?? throw new ArgumentNullException(nameof(displayService));
         _gammaRampDevice = gammaRampDevice ?? throw new ArgumentNullException(nameof(gammaRampDevice));
         _nvidiaColorService = nvidiaColorService ?? throw new ArgumentNullException(nameof(nvidiaColorService));
         _profileStore = profileStore ?? throw new ArgumentNullException(nameof(profileStore));
         _themeManager = themeManager ?? throw new ArgumentNullException(nameof(themeManager));
+        _updateCheckService = updateCheckService ?? throw new ArgumentNullException(nameof(updateCheckService));
 
         ApplyProfileCommand = new RelayCommand(ApplyProfile, _ => SelectedDisplay is not null);
         ResetToDefaultsCommand = new RelayCommand(ResetToDefaults, () => SelectedDisplay is not null);
         ShowSettingsCommand = new RelayCommand(() => SettingsRequested?.Invoke(this, EventArgs.Empty));
         ShowSystemInfoCommand = new RelayCommand(() => SystemInfoRequested?.Invoke(this, EventArgs.Empty));
+        ShowUpdateCommand = new RelayCommand(() => UpdateRequested?.Invoke(this, EventArgs.Empty));
 
         // Computed strings such as NvidiaSummary are built from the language service rather than bound to its
         // indexer, so they have to be re-raised when the language changes.
@@ -131,6 +140,85 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     /// Occurs when the user picks another global chord, which the composition root applies to the hotkey service.
     /// </summary>
     public event EventHandler? HotkeyChangeRequested;
+
+    /// <summary>
+    /// Gets the command that asks for the update window.
+    /// </summary>
+    /// <remarks>
+    /// The command only raises <see cref="UpdateRequested"/>: creating a window is a view concern, so it is
+    /// left to the composition root, exactly like the settings and information windows.
+    /// </remarks>
+    public RelayCommand ShowUpdateCommand { get; }
+
+    /// <summary>
+    /// Occurs when the user asked to see the update window, which the composition root opens.
+    /// </summary>
+    public event EventHandler? UpdateRequested;
+
+    /// <summary>
+    /// Gets the running version in the form shown by the footer, for example <c>v0.8.0</c>.
+    /// </summary>
+    /// <remarks>
+    /// Only the surrounding wrapper is localised; the digits come from the assembly metadata and are therefore
+    /// identical in every language.
+    /// </remarks>
+    public string VersionLabel => LanguageService.Current.Format("Update.Version", GitHubHttpClient.ResolveVersion());
+
+    /// <summary>
+    /// Gets the state last reported by the update check, which colours the footer label.
+    /// </summary>
+    public UpdateCheckState UpdateVisualState { get; private set; } = UpdateCheckState.Unknown;
+
+    /// <summary>
+    /// Gets the full result of the last update check, handed to the update window when it opens.
+    /// </summary>
+    public UpdateCheckResult CurrentUpdateResult { get; private set; } = UpdateCheckResult.NotChecked();
+
+    /// <summary>
+    /// Gets the tooltip that explains the footer label.
+    /// </summary>
+    public string UpdateTooltip => UpdateVisualState switch
+    {
+        UpdateCheckState.UpToDate => LanguageService.Current["Update.Tooltip.Current"],
+        UpdateCheckState.NewVersionAvailable => LanguageService.Current.Format(
+            "Update.Tooltip.Available",
+            CurrentUpdateResult.LatestVersion ?? string.Empty),
+        UpdateCheckState.Checking => LanguageService.Current["Update.Tooltip.Checking"],
+        _ => LanguageService.Current["Update.Tooltip.Failed"],
+    };
+
+    /// <summary>
+    /// Refreshes the footer state from the update check.
+    /// </summary>
+    /// <param name="force"><see langword="true"/> to bypass the per-session cache.</param>
+    /// <returns>A task that completes once the new state has been published.</returns>
+    /// <remarks>
+    /// Called fire-and-forget from startup, so nothing may escape: every failure is folded into
+    /// <see cref="UpdateCheckState.Failed"/> and the service itself already resolves errors to a result.
+    /// </remarks>
+    public async Task LoadUpdateStateAsync(bool force)
+    {
+        try
+        {
+            UpdateVisualState = UpdateCheckState.Checking;
+
+            OnPropertyChanged(nameof(UpdateVisualState));
+            OnPropertyChanged(nameof(UpdateTooltip));
+
+            CurrentUpdateResult = await _updateCheckService.CheckAsync(force).ConfigureAwait(true);
+
+            UpdateVisualState = CurrentUpdateResult.State;
+        }
+        catch (Exception)
+        {
+            // A background check must never surface an exception on the dispatcher.
+            UpdateVisualState = UpdateCheckState.Failed;
+        }
+
+        OnPropertyChanged(nameof(CurrentUpdateResult));
+        OnPropertyChanged(nameof(UpdateVisualState));
+        OnPropertyChanged(nameof(UpdateTooltip));
+    }
 
     /// <summary>
     /// Gets or sets the global chord registered for the profile toggle hotkey.
@@ -1182,6 +1270,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ActiveProfileSummary));
         OnPropertyChanged(nameof(ProfileOneName));
         OnPropertyChanged(nameof(ProfileTwoName));
+
+        // The footer wrapper and the update tooltip are built from the language too, so both are re-raised.
+        OnPropertyChanged(nameof(VersionLabel));
+        OnPropertyChanged(nameof(UpdateTooltip));
 
         // An untouched slot renders its automatic name in the selected language, so each button re-reads it.
         foreach (ProfileSlotViewModel slot in ProfileSlots)
