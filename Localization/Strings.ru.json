@@ -58,6 +58,12 @@
   "SystemInfo.CheckNow": "Проверить",
 
   "Update.Window.Title": "GameMate - Обновление",
+  "Update.Confirm.Title": "GameMate - Обновление",
+  "Update.Confirm.Message": "Доступна версия {0}. Скачать и установить её сейчас?",
+  "Update.Confirm.Yes": "Да",
+  "Update.Confirm.No": "Нет",
+  "Update.Badge.UpToDate": "Актуальная версия",
+  "Update.Badge.Available": "Доступно обновление",
   "Update.Version": "v{0}",
   "Update.Tooltip.Current": "Установлена последняя версия.",
   "Update.Tooltip.Available": "Доступна версия {0}.",

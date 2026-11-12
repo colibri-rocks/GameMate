@@ -1,7 +1,11 @@
-﻿using System.Windows;
+﻿using System.IO;
+using System.Net.Http;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using GameMate.Localization;
+using GameMate.Models;
 using GameMate.Services;
 using GameMate.ViewModels;
 
@@ -235,26 +239,120 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Opens the update window on behalf of the view model.
+    /// Confirms the update with the user and, when accepted, runs the whole in-app update.
     /// </summary>
     /// <param name="sender">View model that raised the request.</param>
     /// <param name="e">Event data.</param>
-    private void OnUpdateRequested(object? sender, EventArgs e)
+    /// <remarks>
+    /// Async void is correct for an event handler, and every failure is caught below: the flow reports through
+    /// the window's status line rather than letting an exception reach the dispatcher.
+    /// </remarks>
+    private async void OnUpdateRequested(object? sender, EventArgs e)
     {
-        UpdateWindow window = new(
-            _updateCheckService,
-            _updateDownloadService,
-            _updateInstaller,
-            _viewModel.CurrentUpdateResult,
+        UpdateCheckResult result = _viewModel.CurrentUpdateResult;
+
+        if (result.State != UpdateCheckState.NewVersionAvailable
+            || result.LatestVersion is not { Length: > 0 } version)
+        {
+            return;
+        }
+
+        string? url = DownloadAddress(result);
+
+        if (url is null)
+        {
+            return;
+        }
+
+        // A themed WPF dialog rather than MessageBox: the native one ignores the palette and takes its button
+        // captions from the Windows UI language rather than the language selected in the application.
+        ConfirmWindow confirm = new(
+            LanguageService.Current.Format("Update.Confirm.Message", version),
             _themeManager)
         {
             Owner = this,
         };
 
-        window.ShowDialog();
+        if (confirm.ShowDialog() != true)
+        {
+            return;
+        }
 
-        // The user may have re-checked inside the window, so the footer state is refreshed from the cache.
-        _ = _viewModel.LoadUpdateStateAsync(force: false);
+        // The shared client carries no timeout of its own, so the transfer is bounded here instead: a stalled
+        // connection ends the attempt rather than leaving the window waiting indefinitely.
+        using CancellationTokenSource timeout = new(TimeSpan.FromMinutes(10));
+
+        try
+        {
+            _viewModel.ReportUpdateStatus(LanguageService.Current["Update.Progress.DownloadingUnknown"]);
+
+            Progress<double> progress = new(percent =>
+            {
+                _viewModel.ReportUpdateStatus(percent < 0
+                    ? LanguageService.Current["Update.Progress.DownloadingUnknown"]
+                    : LanguageService.Current.Format("Update.Progress.Downloading", (int)percent));
+            });
+
+            string archive = await _updateDownloadService
+                .DownloadAsync(new Uri(url), version, progress, timeout.Token)
+                .ConfigureAwait(true);
+
+            _viewModel.ReportUpdateStatus(LanguageService.Current["Update.Progress.Staging"]);
+
+            string staging = _updateDownloadService.Stage(archive, version);
+
+            _updateInstaller.Launch(staging, version);
+
+            _viewModel.ReportUpdateStatus(LanguageService.Current["Update.Progress.Ready"]);
+
+            Application.Current.Shutdown();
+        }
+        catch (OperationCanceledException)
+        {
+            // The bounded timeout expired; the download service has already removed its partial file.
+        }
+        catch (InvalidDataException exception)
+        {
+            _viewModel.ReportUpdateStatus(LanguageService.Current.Format("Update.Error.Extract", exception.Message));
+        }
+        catch (UnauthorizedAccessException)
+        {
+            _viewModel.ReportUpdateStatus(LanguageService.Current["Update.Error.ElevationDenied"]);
+        }
+        catch (HttpRequestException exception)
+        {
+            _viewModel.ReportUpdateStatus(LanguageService.Current.Format("Update.Error.Download", exception.Message));
+        }
+        catch (Exception exception)
+        {
+            _viewModel.ReportUpdateStatus(LanguageService.Current.Format("Update.Error.Start", exception.Message));
+        }
+    }
+
+    /// <summary>
+    /// Root of the published release archive addresses.
+    /// </summary>
+    private const string ReleaseDownloadRoot = "https://github.com/colibri-rocks/GameMate/releases/download";
+
+    /// <summary>
+    /// Resolves the archive address for a check result.
+    /// </summary>
+    /// <param name="result">Result reported by the update check.</param>
+    /// <returns>The archive address, or <see langword="null"/> when none can be derived.</returns>
+    /// <remarks>
+    /// The URL carried by the result is preferred. The tag and archive naming are deterministic, so an address
+    /// can be rebuilt when a result carries none, rather than losing the only action that updates the app.
+    /// </remarks>
+    private static string? DownloadAddress(UpdateCheckResult result)
+    {
+        if (result.DownloadUrl is { Length: > 0 } existing)
+        {
+            return existing;
+        }
+
+        return result.LatestVersion is { Length: > 0 } version
+            ? $"{ReleaseDownloadRoot}/v{version}/GameMate_v{version}.zip"
+            : null;
     }
 
     /// <summary>

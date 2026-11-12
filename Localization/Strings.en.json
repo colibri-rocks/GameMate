@@ -58,6 +58,12 @@
   "SystemInfo.CheckNow": "Check now",
 
   "Update.Window.Title": "GameMate - Update",
+  "Update.Confirm.Title": "GameMate - Update",
+  "Update.Confirm.Message": "Version {0} is available. Download and install it now?",
+  "Update.Confirm.Yes": "Yes",
+  "Update.Confirm.No": "No",
+  "Update.Badge.UpToDate": "Up-to-Date",
+  "Update.Badge.Available": "Update is available",
   "Update.Version": "v{0}",
   "Update.Tooltip.Current": "You are running the latest version.",
   "Update.Tooltip.Available": "Version {0} is available.",

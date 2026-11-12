@@ -58,6 +58,12 @@
   "SystemInfo.CheckNow": "立即检查",
 
   "Update.Window.Title": "GameMate - 更新",
+  "Update.Confirm.Title": "GameMate - 更新",
+  "Update.Confirm.Message": "版本 {0} 可用。现在下载并安装吗？",
+  "Update.Confirm.Yes": "是",
+  "Update.Confirm.No": "否",
+  "Update.Badge.UpToDate": "已是最新",
+  "Update.Badge.Available": "有可用更新",
   "Update.Version": "v{0}",
   "Update.Tooltip.Current": "当前已是最新版本。",
   "Update.Tooltip.Available": "版本 {0} 可用。",

@@ -23,10 +23,15 @@
     <SolidColorBrush x:Key="AccentBorderBrush" Color="#FF2D7DD2" />
     <SolidColorBrush x:Key="AccentForegroundBrush" Color="#FFFFFFFF" />
 
-    <!-- Update status shown by the footer version label, lightened so both still read against the
-         dark surfaces: green means current, red means a newer release exists. -->
+    <!-- Update status: these are the text colours of the footer badges, lightened so both still read
+         against the dark surfaces. Green means current, red means a newer release exists. -->
     <SolidColorBrush x:Key="UpdateCurrentBrush" Color="#FF5BC37A" />
     <SolidColorBrush x:Key="UpdateAvailableBrush" Color="#FFFF6B6B" />
+
+    <!-- Pills behind those labels: deep, low-glare fills so the badge reads as a status chip rather than a
+         warning banner. The brushes above supply the matching same-hue text colour. -->
+    <SolidColorBrush x:Key="UpdateCurrentFillBrush" Color="#FF1F3D2B" />
+    <SolidColorBrush x:Key="UpdateAvailableFillBrush" Color="#FF4A2020" />
 
     <!-- Generic control chrome -->
     <SolidColorBrush x:Key="ControlBackgroundBrush" Color="#FF2D2D30" />

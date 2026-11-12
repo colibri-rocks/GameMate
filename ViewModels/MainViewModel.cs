@@ -426,6 +426,19 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
+    /// Shows a progress or failure message from the update flow in the window's status line.
+    /// </summary>
+    /// <param name="message">Text to display, already localised.</param>
+    /// <remarks>
+    /// The update runs without a window of its own, so the status line is the only place progress and failures
+    /// can appear. Assigning <see cref="StatusMessage"/> already raises the notifications the footer respects.
+    /// </remarks>
+    public void ReportUpdateStatus(string message)
+    {
+        StatusMessage = message;
+    }
+
+    /// <summary>
     /// Gets or sets the theme the window is drawn in.
     /// </summary>
     /// <remarks>

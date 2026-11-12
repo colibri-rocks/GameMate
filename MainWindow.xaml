@@ -510,33 +510,72 @@
                 <Run FontWeight="Bold" Text="{Binding HotkeyCombination, Mode=OneWay}" /><Run Text="{loc:Loc Main.HotkeyHint.Middle}" /><Run FontWeight="Bold" Text="{Binding ProfileOneName, Mode=OneWay}" /><Run Text="{Binding HotkeyHintSeparator, Mode=OneWay}" /><Run FontWeight="Bold" Text="{Binding ProfileTwoName, Mode=OneWay}" /><Run Text="{Binding HotkeyHintThirdJoin, Mode=OneWay}" /><Run FontWeight="Bold" Text="{Binding ProfileThreeName, Mode=OneWay}" /><Run Text="{loc:Loc Main.HotkeyHint.Rename}" />
             </TextBlock>
 
-            <!-- Colour follows the update state: green when current, red when a newer release exists, and the
-                 muted foreground while checking or after a failed check, so a network failure never reads as
-                 "out of date". Clicking opens the update window. -->
-            <TextBlock Grid.Column="1"
-                       Margin="12,0,0,0"
-                       FontSize="11"
-                       VerticalAlignment="Top"
-                       Cursor="Hand"
-                       Text="{Binding VersionLabel}"
-                       ToolTip="{Binding UpdateTooltip}">
-                <TextBlock.Style>
-                    <Style TargetType="TextBlock">
-                        <Setter Property="Foreground" Value="{DynamicResource ForegroundMutedBrush}" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding UpdateVisualState}" Value="UpToDate">
-                                <Setter Property="Foreground" Value="{DynamicResource UpdateCurrentBrush}" />
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding UpdateVisualState}" Value="NewVersionAvailable">
-                                <Setter Property="Foreground" Value="{DynamicResource UpdateAvailableBrush}" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-                <TextBlock.InputBindings>
-                    <MouseBinding MouseAction="LeftClick" Command="{Binding ShowUpdateCommand}" />
-                </TextBlock.InputBindings>
-            </TextBlock>
+            <!-- The version stays one neutral colour; the update state is carried by a badge beside it, and only
+                 the "update available" badge is clickable. -->
+            <StackPanel Grid.Column="1"
+                        Margin="12,0,0,0"
+                        VerticalAlignment="Top"
+                        Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center"
+                           FontSize="11"
+                           Foreground="{DynamicResource ForegroundMutedBrush}"
+                           Text="{Binding VersionLabel}"
+                           ToolTip="{Binding UpdateTooltip}" />
+
+                <!-- Green pill while the installed build is the newest release. -->
+                <Border Margin="8,0,0,0"
+                        Padding="8,3"
+                        CornerRadius="8"
+                        VerticalAlignment="Center"
+                        Background="{DynamicResource UpdateCurrentFillBrush}">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding UpdateVisualState}" Value="UpToDate">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock FontSize="10"
+                               Foreground="{DynamicResource UpdateCurrentBrush}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               LineHeight="14"
+                               LineStackingStrategy="BlockLineHeight"
+                               Text="{loc:Loc Update.Badge.UpToDate}" />
+                </Border>
+
+                <!-- Red pill when a newer release exists; clicking it starts the update. -->
+                <Border Margin="8,0,0,0"
+                        Padding="8,3"
+                        CornerRadius="8"
+                        Cursor="Hand"
+                        VerticalAlignment="Center"
+                        Background="{DynamicResource UpdateAvailableFillBrush}">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding UpdateVisualState}" Value="NewVersionAvailable">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <Border.InputBindings>
+                        <MouseBinding MouseAction="LeftClick" Command="{Binding ShowUpdateCommand}" />
+                    </Border.InputBindings>
+                    <TextBlock FontSize="10"
+                               Foreground="{DynamicResource UpdateAvailableBrush}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               LineHeight="14"
+                               LineStackingStrategy="BlockLineHeight"
+                               Text="{loc:Loc Update.Badge.Available}" />
+                </Border>
+            </StackPanel>
         </Grid>
     </Grid>
 </Window>
